@@ -1,9 +1,7 @@
 use std::{error::Error, ffi::OsStr, fs::{self, read_dir}, io, path::{Path, PathBuf}, time::Duration};
-use lofty::{error::LoftyError, prelude::*, tag::Tag};
-use lofty::probe;
+use audiotags::Tag;
 use serde::{Deserialize, Serialize};
 use serde_binary::binary_stream::Endian;
-
 use crate::constants;
 
 #[derive(Debug, PartialEq)]
@@ -111,7 +109,8 @@ pub struct SongFileInfo {
     pub album_artist: Option<String>,
     pub album: Option<String>,
     pub track_number: Option<i32>,
-    pub year: Option<i32>
+    pub year: Option<i32>,
+    pub cover: Vec<u8>
 }
 
 pub fn scan_dir(dir: &Path) -> Result<Vec<SongFileInfo>, io::Error> {
@@ -154,23 +153,11 @@ fn is_fileext_ok(ext: Option<&OsStr>) -> bool {
     return false;
 }
 
-fn scan_info(path: PathBuf) -> Result<SongFileInfo, LoftyError> {
-    let tagged_file = probe::Probe::open(&path)?.read()?;
+fn scan_info(path: PathBuf) -> Result<SongFileInfo, audiotags::Error> {
+    let tagged_file = Tag::default().read_from_path(&path)?;
 
-	let tag = match tagged_file.primary_tag() {
-		Some(primary_tag) => primary_tag,
-		None => tagged_file.first_tag().expect("ERROR: No tags found!"),
-	};
-
-    let year;
     let length;
-    let track_number: Option<i32>;
-
-    if let Some(tagitem) = tag.date() {
-        year = Some(tagitem.year as i32);
-    } else {
-        year = None;
-    }
+    let album_title;
 
     if let Ok(l) = mp3_duration::from_path(&path) {
         length = l;
@@ -178,41 +165,38 @@ fn scan_info(path: PathBuf) -> Result<SongFileInfo, LoftyError> {
         length = Duration::ZERO;
     }
 
-    if let Some(tagitem) = tag.get(ItemKey::TrackNumber) {
-        if let Some(trackstr) = tagitem.clone().into_value().into_string() {
-            if let Ok(track) = trackstr.parse() {
-                track_number = Some(track);
-            } else {
-                track_number = None;
-            }
-        } else {
-            track_number = None;
-        }
+    if let Some(album) = tagged_file.album() {
+        album_title = Some(album.title);
     } else {
-        track_number = None;
+        album_title = None;
     }
 
     Ok(SongFileInfo {
         filepath: path,
-        title: get_string(&tag, ItemKey::TrackTitle).unwrap_or("?".to_string()),
+        title: option_str_string_thing(tagged_file.title()).unwrap_or("?".to_string()),
         length,
-        artist: get_string(&tag, ItemKey::TrackArtist).unwrap_or("?".to_string()),
-        album_artist: get_string(&tag, ItemKey::AlbumArtist),
-        album: get_string(&tag, ItemKey::AlbumTitle),
-        track_number,
-        year
+        artist: option_str_string_thing(tagged_file.artist()).unwrap_or("?".to_string()),
+        album_artist: option_str_string_thing(tagged_file.album_artist()),
+        album: option_str_string_thing(album_title),
+        track_number: option_u16_i32(tagged_file.track_number()),
+        year: tagged_file.year(),
+        cover: tagged_file.album_cover().unwrap().data.to_vec()
     })
 }
 
-fn get_string(tag: &Tag, item: ItemKey) -> Option<String> {
-     if let Some(tagitem) = tag.get(item) {
-        if let Some(item_string) = tagitem.clone().into_value().into_string() {
-            return Some(item_string);
-        } else {
-            return None;
-        }
+fn option_str_string_thing(input: Option<&str>) -> Option<String> {
+    if let Some(input) = input {
+        Some(input.to_string())
     } else {
-        return None;
+        None
+    }
+}
+
+fn option_u16_i32(input: Option<u16>) -> Option<i32> { // couldnt think of a rhyme unfortunately
+    if let Some(input) = input {
+        Some(input as i32)
+    } else {
+        None
     }
 }
 
