@@ -1,0 +1,50 @@
+import { MenuState } from "../types.slint";
+import { Button, HorizontalBox } from "std-widgets.slint";
+
+export component OnboardingView {
+    in-out property <MenuState> menustate;
+    callback add_media_directory();
+    callback rescan_library();
+
+    width: 1366px;
+
+    VerticalLayout {
+        Text {
+            horizontal-alignment: center;
+            text: "Looks like you're new here!";
+            font-size: 48px;
+        }
+
+        Text {
+            text: "Welcome to Backstop. Get started by:";
+            horizontal-alignment: center;
+            font-size: 24px;
+        }
+
+        HorizontalLayout {
+            alignment: center;
+            padding-top: 64px;
+            spacing: 16px;
+
+            Button {
+                text: "Add a Media Directory";
+
+                clicked => { add_media_directory() }
+            }
+
+            Button {
+                text: "Scan Library";
+                
+                clicked => { rescan_library() }
+            }
+
+            Button {
+                text: "Close";
+
+                clicked => {
+                    menustate = MenuState.Main
+                }
+            }
+        }
+    }
+}

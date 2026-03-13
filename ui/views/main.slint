@@ -1,0 +1,20 @@
+import { MenuState, LibrarySong } from "../types.slint";
+import { ScrollView, Button } from "std-widgets.slint";
+
+export component MainView {
+    in property <[LibrarySong]> media_library;
+    callback play_song(LibrarySong);
+
+    ScrollView {
+        height: 512px;
+        width: 768px;
+        
+        VerticalLayout {
+            for i in media_library: Button {
+                text: i.artist + " - " + i.title;
+
+                clicked => { play_song(i) }
+            }
+        }
+    }
+}

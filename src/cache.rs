@@ -101,18 +101,6 @@ impl MediaCache {
         &self.state
     }
 }
-// pub fn load_from_save() -> Result<MediaCache, io::Error> {
-//     let mut path = PathBuf::from(constants::CONFIG_DIR);
-//     path.push("media_cache.bin");
-
-//     let file = fs::read(path)?;
-
-//     if let Ok(cache) = serde_binary::from_vec::<Vec<SongFileInfo>>(file, Endian::Little) {
-//         return Ok(MediaCache::from_vec(cache));
-//     }
-
-//     Ok(MediaCache::dead())
-// }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SongFileInfo {

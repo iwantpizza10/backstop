@@ -1,3 +1,63 @@
-export component BackstopWindow inherits Window {
+import { MenuState, LibrarySong } from "./types.slint";
+import { Button } from "std-widgets.slint";
+import { OnboardingView } from "views/onboarding.slint";
+import { MainView } from "views/main.slint";
+import { FooterBar } from "footer.slint";
 
+export component BackstopWindow inherits Window {
+    in-out property <MenuState> menustate: Init;
+    in-out property <int> song_position: 0;
+    in property <[LibrarySong]> media_library;
+    in property <LibrarySong> current_song;
+    in property <bool> playing: false;
+    in property <bool> paused: false;
+    callback add_media_directory();
+    callback rescan_library();
+    callback pause();
+    callback resume();
+    callback seek(int);
+    callback toggle_shuffle();
+    callback skip_back();
+    callback skip_forward();
+    callback toggle_repeat();
+    callback play_song(LibrarySong);
+
+    title: "Backstop";
+    width: 1366px;
+    height: 768px;
+    background: #112233;
+
+    Timer {
+        interval: 1s;
+        running: song_position != current_song.length && !paused && playing;
+
+        triggered => {
+            song_position += 1;
+        }
+    }
+
+    if menustate == MenuState.Onboarding: OnboardingView {
+        menustate <=> menustate;
+
+        add_media_directory => { add_media_directory() }
+        rescan_library => { rescan_library() }
+    }
+
+    if menustate == MenuState.Main: MainView {
+        media_library: media_library;
+
+        play_song(a) => { play_song(a) }
+    }
+
+    FooterBar {
+        x: 0px;
+        y: 768px - self.height;
+        height: 96px;
+
+        menustate <=> menustate;
+        current_song: current_song;
+        paused: paused;
+        playing: playing;
+        song_position: song_position;
+    }
 }

@@ -1,0 +1,72 @@
+import { MenuState, LibrarySong } from "./types.slint";
+import { ProgressIndicator } from "std-widgets.slint";
+
+export component FooterBar {
+    callback pause();
+    callback resume();
+    callback seek(int);
+    in-out property <MenuState> menustate;
+    in property <LibrarySong> current_song;
+    in property <bool> paused;
+    in property <bool> playing;
+    in property <int> song_position;
+
+    pure function padded_int(number: int) -> string {
+        if number >= 10 {
+            return "\{number}";
+        } else {
+            return "0\{number}";
+        }
+    }
+
+    pure function seconds_to_timestamp(seconds: int) -> string {
+        return Math.floor(seconds / 60) + ":" + padded_int(Math.mod(seconds, 60));
+    }
+
+    HorizontalLayout {
+        HorizontalLayout {
+            // cover art mini view
+
+            VerticalLayout {
+                Text {
+                    text: current_song.title;
+                }
+
+                if !current_song.album.is-empty && current_song.track-number != -1: Text {
+                    text: "\{current_song.artist} - \{current_song.album} #\{current_song.track-number}";
+                }
+
+                if current_song.album.is-empty || current_song.track-number == -1: Text {
+                    text: "\{current_song.artist}";
+                }
+            }
+        }
+
+        VerticalLayout {
+            ProgressIndicator {
+                progress: song_position / current_song.length;
+                height: 5px;
+                width: 128px;
+            }
+
+            Text {
+                text: "\{seconds_to_timestamp(song_position)} / \{seconds_to_timestamp(current_song.length)}";
+            }
+        }
+
+        HorizontalLayout {
+            // shuffle button
+            // skip back button
+            // pause/resume button
+            // skip forward button
+            // repeat button
+        }
+
+        // spacing!
+
+        HorizontalLayout { // on the far right side
+            // volume control
+            // settings button
+        }
+    }
+}
