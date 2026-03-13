@@ -74,9 +74,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<LibrarySong>) {
-    for i in media_cache.songs() {
-        let test: &VecModel<LibrarySong> = media_cache_rc.as_any().downcast_ref().unwrap();
+    let test: &VecModel<LibrarySong> = media_cache_rc.as_any().downcast_ref().unwrap();
+    test.clear();
 
+    for i in media_cache.songs() {
         let lsong = LibrarySong {
             album: i.album.clone().unwrap_or("".to_string()).into(),
             album_artist: i.album_artist.clone().unwrap_or("".to_string()).into(),

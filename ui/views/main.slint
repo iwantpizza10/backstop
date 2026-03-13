@@ -1,19 +1,150 @@
 import { MenuState, LibrarySong } from "../types.slint";
 import { ScrollView, Button } from "std-widgets.slint";
 
+component SongView {
+    in property <LibrarySong> song;
+    in property <int> col_count;
+    property <length> card_width: (1366px / col_count) - 16px;
+    callback play_song(LibrarySong);
+
+    VerticalLayout {
+        padding: 8px;
+
+        TouchArea {
+            width: card_width;
+            height: self.width;
+
+            Image {
+                source: @image-url("../res/256x256.png");
+                width: card_width;
+                height: self.width;
+            }
+
+            clicked => { play_song(song) }
+        }
+
+        ScrollView {
+            width: card_width;
+            vertical-scrollbar-policy: always-off;
+            horizontal-scrollbar-policy: always-off;
+            property <int> max_x_range: (card_width + 4px + text.width) / 1px;
+            property <int> tick_number: animation-tick() / (1s / 60);
+
+            text := Text {
+                x: Math.floor(self.width / 1px) >= Math.floor(card_width / 1px) ?
+                    (Math.mod(tick_number, max_x_range) * -1px) + (card_width) + 4px
+                    : 0px;
+                text: song.title;
+                font-size: 24px;
+            }
+        }
+
+        Text {
+            text: !song.album.is-empty && song.track-number != -1 ? "\{song.artist} - \{song.album} #\{song.track-number}" :
+                !song.album.is-empty && song.track-number == -1 ? "\{song.artist} - \{song.album}" :
+                "\{song.artist}";
+        }
+    }
+}
+
 export component MainView {
     in property <[LibrarySong]> media_library;
     callback play_song(LibrarySong);
+    property <int> col_count: 6; // please make sure you update the songview counts when changing this
+
+    x: 0px;
+    y: 0px;
 
     ScrollView {
-        height: 512px;
-        width: 768px;
-        
-        VerticalLayout {
-            for i in media_library: Button {
-                text: i.artist + " - " + i.title;
+        x: 0px;
+        y: 0px;
+        height: 768px - 96px; // footer height
+        width: 1366px;
+        // viewport-width: 1366px;
 
-                clicked => { play_song(i) }
+        GridLayout {
+            for i in Math.floor(media_library.length / col_count): Row {
+                // nested for loops do not work in slint 1.15
+                // should be fixed soon??? i hope
+
+                SongView {
+                    song: media_library[(i * col_count) + 0];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(i * col_count) + 1];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(i * col_count) + 2];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(i * col_count) + 3];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(i * col_count) + 4];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(i * col_count) + 5];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+            }
+
+            if Math.mod(media_library.length, col_count) != 0: Row {
+                SongView {
+                    song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 0];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 1];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 2];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 3];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 4];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
             }
         }
     }
