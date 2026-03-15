@@ -1,9 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{cell::RefCell, error::Error, fs::File, rc::Rc};
-use backstop::{cache::{self, CacheState, MediaCache}, settings::BackstopSettings};
+use backstop::{cache::{self, CacheState, MediaCache}, constants, settings::BackstopSettings};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
-use slint::{Model, ModelRc, VecModel};
+use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, VecModel};
 
 slint::include_modules!();
 
@@ -78,6 +78,13 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
     test.clear();
 
     for i in media_cache.songs() {
+        let mut path = constants::conf_dir();
+        path.push("covers");
+        path.push(i.cover.clone().unwrap());
+        let cover_image = image::open(path).unwrap().into_rgba8();
+        let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(cover_image.as_raw(), cover_image.width(), cover_image.height());
+        let cover = Image::from_rgba8(buffer);
+        
         let lsong = LibrarySong {
             album: i.album.clone().unwrap_or("".to_string()).into(),
             album_artist: i.album_artist.clone().unwrap_or("".to_string()).into(),
@@ -86,7 +93,8 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
             path: i.filepath.to_string_lossy().to_string().into(),
             title: i.title.clone().into(),
             track_number: i.track_number.unwrap_or(-1),
-            year: i.year.unwrap_or(-1)
+            year: i.year.unwrap_or(-1),
+            cover
         };
 
         test.push(lsong);

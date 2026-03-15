@@ -1,7 +1,8 @@
 use std::{error::Error, ffi::OsStr, fs::{self, read_dir}, io, path::{Path, PathBuf}, time::Duration};
-use audiotags::Tag;
+use audiotags::{MimeType, Tag};
 use serde::{Deserialize, Serialize};
 use serde_binary::binary_stream::Endian;
+use uuid::Uuid;
 use crate::constants;
 
 #[derive(Debug, PartialEq)]
@@ -79,6 +80,7 @@ impl MediaCache {
 
     pub fn rescan_library(&mut self, dirs: &[PathBuf]) -> Result<(), io::Error> {
         let mut songs = vec![];
+        clear_covers_cache()?;
 
         for dir in dirs {
             let mut dir_scan = scan_dir(dir)?;
@@ -110,7 +112,7 @@ pub struct SongFileInfo {
     pub album: Option<String>,
     pub track_number: Option<i32>,
     pub year: Option<i32>,
-    pub cover: Vec<u8>
+    pub cover: Option<String>
 }
 
 pub fn scan_dir(dir: &Path) -> Result<Vec<SongFileInfo>, io::Error> {
@@ -155,9 +157,11 @@ fn is_fileext_ok(ext: Option<&OsStr>) -> bool {
 
 fn scan_info(path: PathBuf) -> Result<SongFileInfo, audiotags::Error> {
     let tagged_file = Tag::default().read_from_path(&path)?;
-
     let length;
     let album_title;
+    let cover_uuid = Uuid::new_v4().to_string();
+    let mut cover_exists = false;
+    let mut cover_location;
 
     if let Ok(l) = mp3_duration::from_path(&path) {
         length = l;
@@ -171,6 +175,28 @@ fn scan_info(path: PathBuf) -> Result<SongFileInfo, audiotags::Error> {
         album_title = None;
     }
 
+    if let Some(cover) = tagged_file.album_cover() {
+        cover_exists = true;
+        cover_location = constants::conf_dir();
+        cover_location.push("covers");
+        cover_location.push(&cover_uuid);
+        cover_location.set_extension(match cover.mime_type {
+            MimeType::Bmp  => "bmp",
+            MimeType::Gif  => "gif",
+            MimeType::Jpeg => "jpeg",
+            MimeType::Png  => "png",
+            MimeType::Tiff => "tiff"
+        });
+        println!("{}", tagged_file.title().unwrap());
+
+        let image = image::load_from_memory(cover.data).unwrap()
+            .thumbnail_exact(256, 256);
+
+        image.save(&cover_location).unwrap();
+    } else {
+        cover_location = constants::conf_dir();
+    }
+
     Ok(SongFileInfo {
         filepath: path,
         title: option_str_string_thing(tagged_file.title()).unwrap_or("?".to_string()),
@@ -180,7 +206,7 @@ fn scan_info(path: PathBuf) -> Result<SongFileInfo, audiotags::Error> {
         album: option_str_string_thing(album_title),
         track_number: option_u16_i32(tagged_file.track_number()),
         year: tagged_file.year(),
-        cover: tagged_file.album_cover().unwrap().data.to_vec()
+        cover: if cover_exists { Some(cover_location.to_str().unwrap().to_string()) } else { None }
     })
 }
 
@@ -208,4 +234,16 @@ pub fn load_else_dead() -> Result<MediaCache, io::Error> {
     } else {
         Ok(MediaCache::dead())
     }
+}
+
+fn clear_covers_cache() -> Result<(), io::Error> {
+    let mut path = constants::conf_dir();
+    path.push("covers");
+    let dir = fs::read_dir(path)?;
+
+    for i in dir {
+        fs::remove_file(i.unwrap().path())?;
+    }
+
+    Ok(())
 }
