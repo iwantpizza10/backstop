@@ -1,14 +1,51 @@
-import { MenuState, LibrarySong } from "./types.slint";
-import { ProgressIndicator } from "std-widgets.slint";
+import { MenuState, LibrarySong, UIVolumeMode } from "./types.slint";
+import { Button, Slider, ProgressIndicator } from "std-widgets.slint";
+import { IconDisplay, IconSet, Icon } from "@lucide"; // vscode stop error
+
+component FooterButton {
+    in property <Icon> icon;
+    in property <color> color;
+    in property <color> bg_color;
+    callback clicked();
+
+    TouchArea {
+        width: 42px;
+        height: 42px;
+
+        Rectangle {
+            width: 100%;
+            height: 100%;
+            background: bg_color;
+            border-radius: 10px;
+        }
+
+        IconDisplay {
+            icon: icon;
+            stroke: color;
+            stroke-fill: @linear-gradient(0deg, color 0%, color 100%);
+        }
+
+        clicked => { clicked() }
+    }
+}
 
 export component FooterBar {
-    callback pause();
-    callback resume();
+    callback set_volume(float);
+    callback toggle_shuffle();
+    callback toggle_repeat();
+    callback skip_backward();
+    callback skip_forward();
     callback seek(int);
+    callback resume();
+    callback pause();
     in-out property <MenuState> menustate;
     in property <LibrarySong> current_song;
-    in property <bool> paused;
+    in property <UIVolumeMode> volume_mode;
+    in property <float> volume;
     in property <bool> playing;
+    in property <bool> shuffle;
+    in property <bool> paused;
+    in property <bool> repeat;
     in property <int> song_position;
 
     pure function padded_int(number: int) -> string {
@@ -25,48 +62,172 @@ export component FooterBar {
 
     HorizontalLayout {
         HorizontalLayout {
-            // cover art mini view
+            padding-left: 4px;
+            min-width: 1366px / 3;
+            max-width: 1366px / 3;
+            spacing: 8px;
 
+            Rectangle {
+                border-radius: 10px;
+                width: 88px; // from 96px header width - 8px
+                clip: true;
+                
+                Image {
+                    width: 88px;
+                    height: self.width;
+                    source: current_song.cover;
+                }
+            }
+            
             VerticalLayout {
+                alignment: center;
+                spacing: 8px;
+
                 Text {
                     text: current_song.title;
+                    font-size: 18px;
                 }
 
-                if !current_song.album.is-empty && current_song.track-number != -1: Text {
-                    text: "\{current_song.artist} - \{current_song.album} #\{current_song.track-number}";
-                }
+                VerticalLayout {
+                    spacing: -2px;
 
-                if current_song.album.is-empty || current_song.track-number == -1: Text {
-                    text: "\{current_song.artist}";
+                    if !current_song.album.is-empty: Text {
+                        text: current_song.track-number != -1 ? "\{current_song.album} #\{current_song.track-number}" : "\{current_song.album}";
+                        font-size: 12px;
+                    }
+
+                    Text {
+                        text: "\{current_song.artist}";
+                        font-size: 12px;
+                    }
                 }
             }
         }
 
         VerticalLayout {
-            ProgressIndicator {
-                progress: song_position / current_song.length;
-                height: 5px;
-                width: 128px;
+            min-width: 1366px / 3;
+            max-width: 1366px / 3;
+            height: 96px;
+            alignment: center;
+            spacing: 32px;
+            padding-bottom: 8px;
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: center;
+
+                Text {
+                    text: seconds_to_timestamp(song_position);
+                    horizontal-alignment: right;
+                    vertical-alignment: center;
+                }
+
+                // Slider {
+                ProgressIndicator {
+                    // value: song_position;
+                    // maximum: current_song.length;
+                    // minimum: 0;
+                    progress: song_position / current_song.length;
+                    height: 8px;
+                    width: 256px;
+
+                    // changed(value) => { seek(value) }
+                }
+
+                Text {
+                    text: seconds_to_timestamp(current_song.length);
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                }
             }
 
-            Text {
-                text: "\{seconds_to_timestamp(song_position)} / \{seconds_to_timestamp(current_song.length)}";
+            HorizontalLayout {
+                spacing: -192px;
+
+                FooterButton {
+                    icon: IconSet.Shuffle;
+                    color: shuffle ? #ffffff : #aaaaaa;
+                    bg_color: shuffle ? #445566 : #223344;
+
+                    clicked => { toggle_shuffle() }
+                }
+
+                FooterButton {
+                    icon: IconSet.ArrowBigLeftDash;
+                    color: #ffffff;
+                    bg_color: #445566;
+
+                    clicked => { skip_backward() }
+                }
+
+                FooterButton {
+                    icon: paused ? IconSet.Play : IconSet.Pause;
+                    color: #ffffff;
+                    bg_color: #445566;
+
+                    clicked => {
+                        if paused {
+                            resume()
+                        } else {
+                            pause()
+                        }
+                    }
+                }
+
+                FooterButton {
+                    icon: IconSet.ArrowBigRightDash;
+                    color: #ffffff;
+                    bg_color: #445566;
+
+                    clicked => { skip_forward() }
+                }
+
+                FooterButton {
+                    icon: IconSet.Repeat;
+                    color: repeat ? #ffffff : #aaaaaa;
+                    bg_color: repeat ? #445566 : #223344;
+
+                    clicked => { toggle_repeat() }
+                }
             }
         }
 
         HorizontalLayout {
-            // shuffle button
-            // skip back button
-            // pause/resume button
-            // skip forward button
-            // repeat button
-        }
+            min-width: 1366px / 3;
+            max-width: 1366px / 3;
+            alignment: end;
+            padding-right: 4px;
+            spacing: 4px;
 
-        // spacing!
+            VerticalLayout {
+                height: 96px;
+                alignment: center;
 
-        HorizontalLayout { // on the far right side
-            // volume control
-            // settings button
+                Slider {
+                    value: volume;
+                    minimum: 0;
+                    maximum: 100;
+                    width: 100px;
+                    height: 4px;
+
+                    changed(value) => { set_volume(value) }
+                }
+            }
+            
+            Text {
+                text: volume_mode == UIVolumeMode.Decibels ? "\{volume} dB" : "\{volume}%";
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+
+            FooterButton {
+                width: 42px;
+                icon: IconSet.Settings2;
+                color: #ffffff;
+                bg_color: #445566;
+
+                clicked => { menustate = MenuState.Settings }
+            }
         }
     }
 }

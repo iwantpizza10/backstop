@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{cell::RefCell, error::Error, fs::File, rc::Rc};
-use backstop::{cache::{self, CacheState, MediaCache}, constants, settings::BackstopSettings};
+use backstop::{cache::{self, CacheState, MediaCache, SortType}, constants, settings::{BackstopSettings, VolumeMode}};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
 use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, VecModel};
 
@@ -18,10 +18,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let media_cache_model: Rc<VecModel<LibrarySong>> = Rc::new(VecModel::from(vec![]));
     let media_cache_rc = ModelRc::from(media_cache_model);
 
+    media_cache.borrow_mut().sort(SortType::Alphabetical);
+
     let settings = BackstopSettings::load_else_new();
     let mut audio_device_handle = DeviceSinkBuilder::open_default_sink().expect("open default audio stream");
     audio_device_handle.log_on_drop(false);
-    let audio_player = Player::connect_new(&audio_device_handle.mixer());
+    let audio_player = Rc::new(Player::connect_new(&audio_device_handle.mixer()));
 
     if media_cache.borrow().state() == &CacheState::Dead {
         // todo: a ui for if/when these fail
@@ -40,16 +42,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // theres gonna be a few more of these types of calls so ima not group em w/ something else yet
     ui.set_media_library(media_cache_rc.clone());
+    ui.set_volume_mode(match settings.volume_mode() {
+        VolumeMode::Decibels => UIVolumeMode::Decibels,
+        VolumeMode::Linear => UIVolumeMode::Linear
+    });
 
     ui.on_play_song({
-        let ui_handle = ui.as_weak();
+        let ui = ui.as_weak().unwrap();
+        let audio_player = Rc::clone(&audio_player);
 
         move |song| {
-            let ui = ui_handle.unwrap();
             let song_path = song.path.clone();
 
             ui.set_current_song(song);
             ui.set_playing(true);
+            ui.set_paused(false);
             ui.set_song_position(0);
 
             let file = File::open(song_path).unwrap();
@@ -69,6 +76,26 @@ fn main() -> Result<(), Box<dyn Error>> {
             media_cache.borrow().save_to_disk().unwrap();
 
             load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone()).unwrap();
+        }
+    });
+
+    ui.on_pause({
+        let ui = ui.as_weak().unwrap();
+        let audio_player = Rc::clone(&audio_player);
+
+        move || {
+            ui.set_paused(true);
+            audio_player.pause();
+        }
+    });
+
+    ui.on_resume({
+        let ui = ui.as_weak().unwrap();
+        let audio_player = Rc::clone(&audio_player);
+
+        move || {
+            ui.set_paused(false);
+            audio_player.play();
         }
     });
 

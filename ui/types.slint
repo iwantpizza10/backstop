@@ -2,7 +2,8 @@ export enum MenuState {
     Onboarding,
     Init,
     Welcome,
-    Main
+    Main,
+    Settings
 }
 
 export struct LibrarySong {
@@ -15,4 +16,9 @@ export struct LibrarySong {
     track_number: int,
     year: int,
     cover: image
+}
+
+export enum UIVolumeMode {
+    Linear,
+    Decibels
 }

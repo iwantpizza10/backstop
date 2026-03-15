@@ -13,6 +13,12 @@ pub enum CacheState {
     Dead
 }
 
+#[derive(Debug, PartialEq)]
+pub enum SortType {
+    Alphabetical,
+    ReverseAlphabetical
+}
+
 #[derive(Debug)]
 pub struct MediaCache {
     songs: Vec<SongFileInfo>,
@@ -99,6 +105,18 @@ impl MediaCache {
 
     pub fn state(&self) -> &CacheState {
         &self.state
+    }
+
+    pub fn sort(&mut self, sort_type: SortType) {
+        match sort_type {
+            SortType::Alphabetical => {
+                self.songs.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+            },
+            SortType::ReverseAlphabetical => {
+                self.songs.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                self.songs.reverse();
+            }
+        }
     }
 }
 
