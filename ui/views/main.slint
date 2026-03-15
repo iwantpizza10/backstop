@@ -9,6 +9,7 @@ component SongView {
 
     VerticalLayout {
         padding: 8px;
+        spacing: -8px;
 
         TouchArea {
             width: card_width;
@@ -23,26 +24,37 @@ component SongView {
             clicked => { play_song(song) }
         }
 
-        ScrollView {
-            width: card_width;
-            vertical-scrollbar-policy: always-off;
-            horizontal-scrollbar-policy: always-off;
-            property <int> max_x_range: (card_width + 4px + text.width) / 1px;
-            property <int> tick_number: animation-tick() / (1s / 60);
-
-            text := Text {
-                x: Math.floor(self.width / 1px) >= Math.floor(card_width / 1px) ?
-                    (Math.mod(tick_number, max_x_range) * -1px) + (card_width) + 4px
-                    : 0px;
-                text: song.title;
-                font-size: 24px;
+        VerticalLayout {
+            alignment: start;
+            spacing: -10px;
+            
+            ScrollView {
+                width: card_width;
+                vertical-scrollbar-policy: always-off;
+                horizontal-scrollbar-policy: always-off;
+                property <int> max_x_range: (card_width + 4px + text.width) / 1px;
+                property <int> tick_number: animation-tick() / (1s / 60);
+    
+                text := Text {
+                    x: Math.floor(self.width / 1px) >= Math.floor(card_width / 1px) ?
+                        (Math.mod(tick_number, max_x_range) * -1px) + (card_width) + 4px
+                        : 0px;
+                    text: song.title;
+                    font-size: 18px;
+                }
             }
-        }
 
-        Text {
-            text: !song.album.is-empty && song.track-number != -1 ? "\{song.artist} - \{song.album} #\{song.track-number}" :
-                !song.album.is-empty && song.track-number == -1 ? "\{song.artist} - \{song.album}" :
-                "\{song.artist}";
+            VerticalLayout {
+                if !song.album.is-empty: Text {
+                    text: song.track-number != -1 ? "\{song.album} #\{song.track-number}" : "\{song.album}";
+                    font-size: 12px;
+                }
+
+                Text {
+                    text: "\{song.artist}";
+                    font-size: 12px;
+                }
+            }
         }
     }
 }
@@ -50,7 +62,7 @@ component SongView {
 export component MainView {
     in property <[LibrarySong]> media_library;
     callback play_song(LibrarySong);
-    property <int> col_count: 6; // please make sure you update the songview counts when changing this
+    property <int> col_count: 8; // please make sure you update the songview counts when changing this
 
     x: 0px;
     y: 0px;
@@ -108,6 +120,20 @@ export component MainView {
 
                     play_song(song) => { play_song(song) }
                 }
+
+                SongView {
+                    song: media_library[(i * col_count) + 6];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(i * col_count) + 7];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
             }
 
             if Math.mod(media_library.length, col_count) != 0: Row {
@@ -141,6 +167,20 @@ export component MainView {
 
                 SongView {
                     song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 4];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 5];
+                    col_count: col_count;
+
+                    play_song(song) => { play_song(song) }
+                }
+
+                SongView {
+                    song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 6];
                     col_count: col_count;
 
                     play_song(song) => { play_song(song) }

@@ -93,11 +93,13 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
                 cover_image = image.into_rgba8();
             } else {
                 cover_image = image::load_from_memory(PLACEHOLDER_COVER)
-                    .expect("placeholder coverart should process correctly").into_rgba8();
+                    .expect("placeholder coverart should process correctly")
+                    .into_rgba8();
             }
         } else {
             cover_image = image::load_from_memory(PLACEHOLDER_COVER)
-                .expect("placeholder coverart should process correctly").into_rgba8();
+                .expect("placeholder coverart should process correctly")
+                .into_rgba8();
         }
 
         let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(cover_image.as_raw(), cover_image.width(), cover_image.height());
