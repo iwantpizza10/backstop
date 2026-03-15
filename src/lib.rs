@@ -37,7 +37,7 @@ pub fn init_config_dirs() -> Result<(), io::Error> {
     for dir in dirs {
         if let Some(dir) = dir && result_false_or_err(fs::exists(&dir)) {
             // create_dir_all just in case theres somehow a missing folder on a higher level
-            fs::create_dir_all(&dir).unwrap();
+            fs::create_dir_all(&dir)?;
         }
     }
 

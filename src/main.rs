@@ -5,6 +5,8 @@ use backstop::{cache::{self, CacheState, MediaCache}, constants, settings::Backs
 use rodio::{Decoder, DeviceSinkBuilder, Player};
 use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, VecModel};
 
+const PLACEHOLDER_COVER: &[u8] = include_bytes!("../ui/res/cover_placeholder.png");
+
 slint::include_modules!();
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -22,11 +24,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let audio_player = Player::connect_new(&audio_device_handle.mixer());
 
     if media_cache.borrow().state() == &CacheState::Dead {
+        // todo: a ui for if/when these fail
+
         media_cache.borrow_mut().rescan_library(settings.media_directories()).unwrap();
         media_cache.borrow().save_to_disk().unwrap();
     }
 
-    load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone());
+    load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone())?;
 
     if settings.is_first_launch() {
         ui.set_menustate(MenuState::Onboarding);
@@ -64,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             media_cache.borrow_mut().rescan_library(settings.media_directories()).unwrap();
             media_cache.borrow().save_to_disk().unwrap();
 
-            load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone());
+            load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone()).unwrap();
         }
     });
 
@@ -73,15 +77,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<LibrarySong>) {
-    let test: &VecModel<LibrarySong> = media_cache_rc.as_any().downcast_ref().unwrap();
+fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<LibrarySong>) -> Result<(), Box<dyn Error>> {
+    let test: &VecModel<LibrarySong> = media_cache_rc.as_any().downcast_ref().expect("media_cache_rc downcast should downcast properly");
     test.clear();
 
     for i in media_cache.songs() {
         let mut path = constants::conf_dir();
         path.push("covers");
-        path.push(i.cover.clone().unwrap());
-        let cover_image = image::open(path).unwrap().into_rgba8();
+        let cover_image;
+
+        if let Some(cover_path) = i.cover.clone() {
+            path.push(cover_path);
+
+            if let Ok(image) = image::open(path) {
+                cover_image = image.into_rgba8();
+            } else {
+                cover_image = image::load_from_memory(PLACEHOLDER_COVER)
+                    .expect("placeholder coverart should process correctly").into_rgba8();
+            }
+        } else {
+            cover_image = image::load_from_memory(PLACEHOLDER_COVER)
+                .expect("placeholder coverart should process correctly").into_rgba8();
+        }
+
         let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(cover_image.as_raw(), cover_image.width(), cover_image.height());
         let cover = Image::from_rgba8(buffer);
         
@@ -99,4 +117,6 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
 
         test.push(lsong);
     }
+
+    Ok(())
 }

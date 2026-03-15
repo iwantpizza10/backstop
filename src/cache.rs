@@ -155,7 +155,7 @@ fn is_fileext_ok(ext: Option<&OsStr>) -> bool {
     return false;
 }
 
-fn scan_info(path: PathBuf) -> Result<SongFileInfo, audiotags::Error> {
+fn scan_info(path: PathBuf) -> Result<SongFileInfo, Box<dyn Error>> {
     let tagged_file = Tag::default().read_from_path(&path)?;
     let length;
     let album_title;
@@ -187,14 +187,21 @@ fn scan_info(path: PathBuf) -> Result<SongFileInfo, audiotags::Error> {
             MimeType::Png  => "png",
             MimeType::Tiff => "tiff"
         });
-        println!("{}", tagged_file.title().unwrap());
 
-        let image = image::load_from_memory(cover.data).unwrap()
+        let image = image::load_from_memory(cover.data)?
             .thumbnail_exact(256, 256);
 
-        image.save(&cover_location).unwrap();
+        image.save(&cover_location)?;
     } else {
         cover_location = constants::conf_dir();
+    }
+
+    let cover;
+
+    if cover_exists && let Some(location) = cover_location.to_str() {
+        cover = Some(location.to_string());
+    } else {
+        cover = None
     }
 
     Ok(SongFileInfo {
@@ -206,7 +213,7 @@ fn scan_info(path: PathBuf) -> Result<SongFileInfo, audiotags::Error> {
         album: option_str_string_thing(album_title),
         track_number: option_u16_i32(tagged_file.track_number()),
         year: tagged_file.year(),
-        cover: if cover_exists { Some(cover_location.to_str().unwrap().to_string()) } else { None }
+        cover
     })
 }
 
@@ -242,7 +249,9 @@ fn clear_covers_cache() -> Result<(), io::Error> {
     let dir = fs::read_dir(path)?;
 
     for i in dir {
-        fs::remove_file(i.unwrap().path())?;
+        if let Ok(file) = i {
+            fs::remove_file(file.path())?;
+        }
     }
 
     Ok(())
