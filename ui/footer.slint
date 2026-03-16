@@ -1,6 +1,6 @@
-import { MenuState, LibrarySong, UIVolumeMode } from "./types.slint";
+import { MenuState, LibrarySong } from "./types.slint";
 import { Button, Slider, ProgressIndicator } from "std-widgets.slint";
-import { IconDisplay, IconSet, Icon } from "@lucide"; // vscode stop error
+import { IconDisplay, IconSet, Icon } from "@lucide";
 
 component FooterButton {
     in property <Icon> icon;
@@ -40,7 +40,6 @@ export component FooterBar {
     callback pause();
     in-out property <MenuState> menustate;
     in property <LibrarySong> current_song;
-    in property <UIVolumeMode> volume_mode;
     in property <float> volume;
     in property <bool> playing;
     in property <bool> shuffle;
@@ -71,14 +70,14 @@ export component FooterBar {
                 border-radius: 10px;
                 width: 88px; // from 96px header width - 8px
                 clip: true;
-                
+
                 Image {
                     width: 88px;
                     height: self.width;
                     source: current_song.cover;
                 }
             }
-            
+
             VerticalLayout {
                 alignment: center;
                 spacing: 8px;
@@ -197,27 +196,29 @@ export component FooterBar {
             max-width: 1366px / 3;
             alignment: end;
             padding-right: 4px;
-            spacing: 4px;
+            spacing: 8px;
 
             VerticalLayout {
                 height: 96px;
                 alignment: center;
+                spacing: 10px;
+
+                Text {
+                    text: "\{volume} dB (\{Math.floor(Math.pow(10, volume / 20) * 100)}%)";
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    horizontal-alignment: center;
+                }
 
                 Slider {
-                    value: volume;
+                    value: volume + 40;
                     minimum: 0;
-                    maximum: 100;
+                    maximum: 40;
                     width: 100px;
                     height: 4px;
 
-                    changed(value) => { set_volume(value) }
+                    changed(value) => { set_volume(Math.floor(value - 40)) }
                 }
-            }
-            
-            Text {
-                text: volume_mode == UIVolumeMode.Decibels ? "\{volume} dB" : "\{volume}%";
-                vertical-alignment: center;
-                horizontal-alignment: center;
             }
 
             FooterButton {

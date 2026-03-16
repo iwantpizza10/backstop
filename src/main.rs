@@ -1,9 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{cell::RefCell, error::Error, fs::File, rc::Rc};
-use backstop::{cache::{self, CacheState, MediaCache, SortType}, constants, settings::{BackstopSettings, VolumeMode}};
+use backstop::{cache::{self, CacheState, MediaCache, SortType}, constants, settings::{BackstopSettings}};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
-use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, VecModel};
+use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, VecModel};
 
 const PLACEHOLDER_COVER: &[u8] = include_bytes!("../ui/res/cover_placeholder.png");
 
@@ -11,41 +11,36 @@ slint::include_modules!();
 
 fn main() -> Result<(), Box<dyn Error>> {
     let _ = backstop::init_config_dirs(); // not gonna ? this cause its not technically needed to run
-
     let ui = BackstopWindow::new()?;
 
     let media_cache = Rc::new(RefCell::new(cache::load_else_dead().unwrap_or_else(|_| MediaCache::dead())));
     let media_cache_model: Rc<VecModel<LibrarySong>> = Rc::new(VecModel::from(vec![]));
     let media_cache_rc = ModelRc::from(media_cache_model);
 
-    media_cache.borrow_mut().sort(SortType::Alphabetical);
+    let media_dirs_model: Rc<VecModel<SharedString>> = Rc::new(VecModel::from(vec![]));
+    let media_dirs_rc = ModelRc::from(media_dirs_model);
 
-    let settings = BackstopSettings::load_else_new();
+    let settings = Rc::new(RefCell::new(BackstopSettings::load_else_new()));
     let mut audio_device_handle = DeviceSinkBuilder::open_default_sink().expect("open default audio stream");
     audio_device_handle.log_on_drop(false);
     let audio_player = Rc::new(Player::connect_new(&audio_device_handle.mixer()));
 
+    audio_player.set_volume(settings.borrow().volume_linear());
+
     if media_cache.borrow().state() == &CacheState::Dead {
         // todo: a ui for if/when these fail
 
-        media_cache.borrow_mut().rescan_library(settings.media_directories()).unwrap();
+        media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).unwrap();
         media_cache.borrow().save_to_disk().unwrap();
     }
 
+    media_cache.borrow_mut().sort(SortType::TitleAlphabetical);
     load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone())?;
 
-    if settings.is_first_launch() {
-        ui.set_menustate(MenuState::Onboarding);
-    } else {
-        ui.set_menustate(MenuState::Welcome);
-    }
-
-    // theres gonna be a few more of these types of calls so ima not group em w/ something else yet
+    ui.set_volume(settings.borrow().volume());
+    ui.set_menustate(if settings.borrow().is_first_launch() { MenuState::Onboarding } else { MenuState::Welcome });
     ui.set_media_library(media_cache_rc.clone());
-    ui.set_volume_mode(match settings.volume_mode() {
-        VolumeMode::Decibels => UIVolumeMode::Decibels,
-        VolumeMode::Linear => UIVolumeMode::Linear
-    });
+    ui.set_media_directories(media_dirs_rc.clone());
 
     ui.on_play_song({
         let ui = ui.as_weak().unwrap();
@@ -70,9 +65,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     ui.on_rescan_library({
         let media_cache = Rc::clone(&media_cache);
+        let settings = Rc::clone(&settings);
 
         move || {
-            media_cache.borrow_mut().rescan_library(settings.media_directories()).unwrap();
+            media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).unwrap();
             media_cache.borrow().save_to_disk().unwrap();
 
             load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone()).unwrap();
@@ -96,6 +92,38 @@ fn main() -> Result<(), Box<dyn Error>> {
         move || {
             ui.set_paused(false);
             audio_player.play();
+        }
+    });
+
+    ui.on_set_volume({
+        let ui = ui.as_weak().unwrap();
+        let audio_player = Rc::clone(&audio_player);
+        let settings = Rc::clone(&settings);
+
+        move |vol_db| {
+            let mut settings = settings.borrow_mut();
+
+            settings.set_volume(vol_db);
+            audio_player.set_volume(settings.volume_linear());
+            ui.set_volume(vol_db);
+        }
+    });
+
+    ui.on_add_media_directory({
+        let settings = Rc::clone(&settings);
+        let ui = ui.as_weak().unwrap();
+        
+        move || {
+            let dirs_rc = ui.get_media_directories();
+            let media_dirs: &VecModel<SharedString> = dirs_rc.as_any().downcast_ref().expect("media_dirs_rc downcast should downcast properly");
+
+            let dir = rfd::FileDialog::new()
+                .pick_folder();
+
+            if let Some(dir) = dir {
+                media_dirs.push(dir.to_string_lossy().to_string().into());
+                settings.borrow_mut().add_media_directory(dir);
+            }
         }
     });
 
@@ -131,7 +159,7 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
 
         let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(cover_image.as_raw(), cover_image.width(), cover_image.height());
         let cover = Image::from_rgba8(buffer);
-        
+
         let lsong = LibrarySong {
             album: i.album.clone().unwrap_or("".to_string()).into(),
             album_artist: i.album_artist.clone().unwrap_or("".to_string()).into(),

@@ -7,16 +7,9 @@ use serde_binary::binary_stream::Endian;
 use crate::constants;
 
 #[derive(Serialize, Deserialize)]
-pub enum VolumeMode {
-    Linear,
-    Decibels
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct BackstopSettings {
     has_launched: bool,
-    volume: f64,
-    volume_mode: VolumeMode,
+    volume: f32,
     playback_speed: f32,
     cache_last_updated: DateTime<Utc>,
     media_directories: Vec<PathBuf>
@@ -26,11 +19,10 @@ impl BackstopSettings {
     pub fn new() -> Self {
         BackstopSettings {
             has_launched: false,
-            volume: 1.0,
-            volume_mode: VolumeMode::Linear,
+            volume: -0.0,
             playback_speed: 1.0,
             cache_last_updated: Utc::now(),
-            media_directories: vec![ PathBuf::from("D:\\coding\\backstop\\music-temp") ]
+            media_directories: vec![]
         }
     }
 
@@ -73,33 +65,23 @@ impl BackstopSettings {
         self.has_launched = !first_launch;
     }
 
-    pub fn volume_linear(&self) -> f64 {
-        self.volume
+    /// returns the volume as a multiplier
+    /// 
+    /// `linear volume` = pow(10, `dB` / 20)
+    pub fn volume_linear(&self) -> f32 {
+        10f32.powf(self.volume / 20.0)
     }
 
     /// returns the volume in decibels
+    pub fn volume(&self) -> f32 {
+        self.volume
+    }
+
+    /// sets the volume (DECIBELS!)
     /// 
     /// `db` = 20 * log10(`linear volume`)
-    pub fn volume_db(&self) -> f64 {
-        
-        self.volume.log10() * 20.0
-    }
-    
-    pub fn set_volume(&mut self, volume: f64) {
-        // amplitude = pow(10,dB/20)
-
-        match self.volume_mode() {
-            VolumeMode::Linear => self.volume = volume,
-            VolumeMode::Decibels => self.volume = 10f64.powf(volume / 20.0)
-        }
-    }
-
-    pub fn volume_mode(&self) -> &VolumeMode {
-        &self.volume_mode
-    }
-
-    pub fn set_volume_mode(&mut self, mode: VolumeMode) {
-        self.volume_mode = mode;
+    pub fn set_volume(&mut self, volume: f32) {
+        self.volume = volume;
     }
 
     pub fn playback_speed(&self) -> f32 {
@@ -116,5 +98,9 @@ impl BackstopSettings {
 
     pub fn media_directories(&self) -> &Vec<PathBuf> {
         &self.media_directories
+    }
+
+    pub fn add_media_directory(&mut self, directory: PathBuf) {
+        self.media_directories.push(directory);
     }
 }

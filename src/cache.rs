@@ -15,8 +15,10 @@ pub enum CacheState {
 
 #[derive(Debug, PartialEq)]
 pub enum SortType {
-    Alphabetical,
-    ReverseAlphabetical
+    TitleAlphabetical,
+    ReverseTitleAlphabetical,
+    ArtistAlphabetical,
+    ReverseArtistAlphabetical
 }
 
 #[derive(Debug)]
@@ -109,11 +111,18 @@ impl MediaCache {
 
     pub fn sort(&mut self, sort_type: SortType) {
         match sort_type {
-            SortType::Alphabetical => {
+            SortType::TitleAlphabetical => {
                 self.songs.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
             },
-            SortType::ReverseAlphabetical => {
+            SortType::ReverseTitleAlphabetical => {
                 self.songs.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                self.songs.reverse();
+            },
+            SortType::ArtistAlphabetical => {
+                self.songs.sort_by(|a, b| a.artist.to_lowercase().cmp(&b.artist.to_lowercase()));
+            },
+            SortType::ReverseArtistAlphabetical => {
+                self.songs.sort_by(|a, b| a.artist.to_lowercase().cmp(&b.artist.to_lowercase()));
                 self.songs.reverse();
             }
         }

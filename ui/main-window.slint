@@ -1,4 +1,4 @@
-import { MenuState, LibrarySong, UIVolumeMode } from "./types.slint";
+import { MenuState, LibrarySong } from "./types.slint";
 import { Button } from "std-widgets.slint";
 import { OnboardingView } from "views/onboarding.slint";
 import { MainView } from "views/main.slint";
@@ -9,7 +9,7 @@ export component BackstopWindow inherits Window {
     in-out property <int> song_position: 0;
     in property <[LibrarySong]> media_library;
     in property <LibrarySong> current_song;
-    in property <UIVolumeMode> volume_mode;
+    in property <[string]> media_directories;
     in property <float> volume;
     in property <bool> playing: false;
     in property <bool> shuffle: false;
@@ -24,7 +24,7 @@ export component BackstopWindow inherits Window {
     callback skip_backward();
     callback skip_forward();
     callback toggle_repeat();
-    callback set_volume(int);
+    callback set_volume(float);
     callback play_song(LibrarySong);
 
     title: "Backstop";
@@ -61,7 +61,6 @@ export component BackstopWindow inherits Window {
 
         menustate <=> menustate;
         current_song: current_song;
-        volume_mode: volume_mode;
         volume: volume;
         playing: playing;
         shuffle: shuffle;
