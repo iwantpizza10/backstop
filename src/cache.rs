@@ -142,6 +142,7 @@ pub struct SongFileInfo {
     pub cover: Option<String>
 }
 
+
 pub fn scan_dir(dir: &Path) -> Result<Vec<SongFileInfo>, io::Error> {
     let x = read_dir(dir)?;
     let mut songs_vec: Vec<SongFileInfo> = vec![];

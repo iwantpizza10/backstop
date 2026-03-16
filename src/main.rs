@@ -42,7 +42,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
         let queue = Rc::clone(&songs_queue);
-        let media_cache = Rc::clone(&media_cache);
         let last_check = Rc::new(RefCell::new(Duration::ZERO));
 
         move || {
@@ -61,7 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), Rc::clone(&queue), Rc::clone(&media_cache), library_paranormal_convert(&song));
+                play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
             }
 
             *last_check.borrow_mut() = audio_player.get_pos();
@@ -83,7 +82,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         let media_cache = Rc::clone(&media_cache);
 
         move |song| {
-            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), Rc::clone(&songs_queue), Rc::clone(&media_cache), song);
+            let mut songs_queue = songs_queue.borrow_mut();
+
+            let cur_song_idx = media_cache.borrow().songs().iter()
+                .position(|x| *x.filepath == *song.path)
+                .expect("chose a song somehow that doesnt exit (???)") as i32;
+            *songs_queue = SongsQueue::create_from_cache(&*media_cache.borrow(), cur_song_idx);
+
+            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song);
         }
     });
 
@@ -155,7 +161,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
         let queue = Rc::clone(&songs_queue);
-        let media_cache = Rc::clone(&media_cache);
 
         move || {
             let song;
@@ -170,7 +175,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
 
-            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), Rc::clone(&queue), Rc::clone(&media_cache), library_paranormal_convert(&song));
+            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
         }
     });
 
@@ -178,14 +183,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
         let queue = Rc::clone(&songs_queue);
-        let media_cache = Rc::clone(&media_cache);
 
         move || {
             let song;
 
             if ui.get_song_position() < SECONGS_BACKSKIP_THRESHOLD {
                 let mut songs_queue = queue.borrow_mut();
-                
+
                 if let Some(sog) = songs_queue.prev_song().cloned() {
                     song = sog;
                 } else {
@@ -197,7 +201,24 @@ fn main() -> Result<(), Box<dyn Error>> {
                 song = songs_queue.current_song().clone();
             }
 
-            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), Rc::clone(&queue), Rc::clone(&media_cache), library_paranormal_convert(&song));
+            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+        }
+    });
+
+    ui.on_toggle_shuffle({
+        let ui = ui.as_weak().unwrap();
+        let queue = Rc::clone(&songs_queue);
+
+        move || {
+            let mut queue = queue.borrow_mut();
+
+            if ui.get_shuffle() {
+                queue.unshuffle();
+                ui.set_shuffle(false);
+            } else {
+                queue.shuffle();
+                ui.set_shuffle(true);
+            }
         }
     });
 
@@ -253,14 +274,8 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
     Ok(())
 }
 
-fn play_song(audio_player: Rc<Player>, ui: BackstopWindow, queue: Rc<RefCell<SongsQueue>>, media_cache: Rc<RefCell<MediaCache>>, song: LibrarySong) {
+fn play_song(audio_player: Rc<Player>, ui: BackstopWindow, song: LibrarySong) {
     let song_path = song.path.clone();
-    let mut queue = queue.borrow_mut();
-
-    let cur_song_idx = media_cache.borrow().songs().iter()
-        .position(|x| *x.filepath == *song.path)
-        .expect("chose a song somehow that doesnt exit (???)") as i32;
-    *queue = SongsQueue::create_from_cache(&*media_cache.borrow(), cur_song_idx);
 
     ui.set_current_song(song);
     ui.set_playing(true);
