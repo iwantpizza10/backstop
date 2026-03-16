@@ -6,7 +6,6 @@ import { FooterBar } from "footer.slint";
 
 export component BackstopWindow inherits Window {
     in-out property <MenuState> menustate: Init;
-    in-out property <int> song_position: 0;
     in property <[LibrarySong]> media_library;
     in property <LibrarySong> current_song;
     in property <[string]> media_directories;
@@ -15,6 +14,7 @@ export component BackstopWindow inherits Window {
     in property <bool> shuffle: false;
     in property <bool> paused: false;
     in property <bool> repeat: false;
+    in property <int> song_position: 0;
     callback add_media_directory();
     callback rescan_library();
     callback pause();
@@ -31,15 +31,6 @@ export component BackstopWindow inherits Window {
     width: 1366px;
     height: 768px;
     background: #112233;
-
-    Timer {
-        interval: 1s;
-        running: song_position != current_song.length && !paused && playing;
-
-        triggered => {
-            song_position += 1;
-        }
-    }
 
     if menustate == MenuState.Onboarding: OnboardingView {
         menustate <=> menustate;

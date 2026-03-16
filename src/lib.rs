@@ -3,6 +3,7 @@ use std::{fs, io};
 pub mod cache;
 pub mod settings;
 pub mod constants;
+pub mod queue;
 
 pub fn result_false_or_err<T>(result: Result<bool, T>) -> bool {
     match result {

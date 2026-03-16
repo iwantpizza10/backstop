@@ -1,11 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{cell::RefCell, error::Error, fs::File, rc::Rc};
-use backstop::{cache::{self, CacheState, MediaCache, SortType}, constants, settings::{BackstopSettings}};
+use std::{cell::RefCell, error::Error, fs::File, rc::Rc, time::Duration};
+use backstop::{cache::{self, CacheState, MediaCache, SongFileInfo, SortType}, constants, queue::SongsQueue, settings::BackstopSettings};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
 use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, VecModel};
 
 const PLACEHOLDER_COVER: &[u8] = include_bytes!("../ui/res/cover_placeholder.png");
+const SECONGS_BACKSKIP_THRESHOLD: i32 = 5;
 
 slint::include_modules!();
 
@@ -25,6 +26,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     audio_device_handle.log_on_drop(false);
     let audio_player = Rc::new(Player::connect_new(&audio_device_handle.mixer()));
 
+    let songs_queue = Rc::new(RefCell::new(SongsQueue::new()));
+
     audio_player.set_volume(settings.borrow().volume_linear());
 
     if media_cache.borrow().state() == &CacheState::Dead {
@@ -33,6 +36,37 @@ fn main() -> Result<(), Box<dyn Error>> {
         media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).unwrap();
         media_cache.borrow().save_to_disk().unwrap();
     }
+
+    let timer = slint::Timer::default();
+    timer.start(slint::TimerMode::Repeated, Duration::from_millis(250), {
+        let ui = ui.as_weak().unwrap();
+        let audio_player = Rc::clone(&audio_player);
+        let queue = Rc::clone(&songs_queue);
+        let media_cache = Rc::clone(&media_cache);
+        let last_check = Rc::new(RefCell::new(Duration::ZERO));
+
+        move || {
+            ui.set_song_position(audio_player.get_pos().as_secs() as i32);
+            
+            if queue.borrow().songs().len() != 0 && *last_check.borrow() == audio_player.get_pos() && !ui.get_paused() {
+                let song;
+
+                {
+                    let mut songs_queue = queue.borrow_mut();
+
+                    if let Some(sog) = songs_queue.next_song().cloned() {
+                        song = sog;
+                    } else {
+                        song = songs_queue.current_song().clone();
+                    }
+                }
+
+                play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), Rc::clone(&queue), Rc::clone(&media_cache), library_paranormal_convert(&song));
+            }
+
+            *last_check.borrow_mut() = audio_player.get_pos();
+        }
+    });
 
     media_cache.borrow_mut().sort(SortType::TitleAlphabetical);
     load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone())?;
@@ -45,21 +79,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.on_play_song({
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
+        let songs_queue = Rc::clone(&songs_queue);
+        let media_cache = Rc::clone(&media_cache);
 
         move |song| {
-            let song_path = song.path.clone();
-
-            ui.set_current_song(song);
-            ui.set_playing(true);
-            ui.set_paused(false);
-            ui.set_song_position(0);
-
-            let file = File::open(song_path).unwrap();
-            let source = Decoder::try_from(file).unwrap();
-
-            audio_player.clear();
-            audio_player.append(source);
-            audio_player.play();
+            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), Rc::clone(&songs_queue), Rc::clone(&media_cache), song);
         }
     });
 
@@ -127,6 +151,56 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
+    ui.on_skip_forward({
+        let ui = ui.as_weak().unwrap();
+        let audio_player = Rc::clone(&audio_player);
+        let queue = Rc::clone(&songs_queue);
+        let media_cache = Rc::clone(&media_cache);
+
+        move || {
+            let song;
+
+            {
+                let mut songs_queue = queue.borrow_mut();
+
+                if let Some(sog) = songs_queue.next_song().cloned() {
+                    song = sog;
+                } else {
+                    song = songs_queue.current_song().clone();
+                }
+            }
+
+            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), Rc::clone(&queue), Rc::clone(&media_cache), library_paranormal_convert(&song));
+        }
+    });
+
+    ui.on_skip_backward({
+        let ui = ui.as_weak().unwrap();
+        let audio_player = Rc::clone(&audio_player);
+        let queue = Rc::clone(&songs_queue);
+        let media_cache = Rc::clone(&media_cache);
+
+        move || {
+            let song;
+
+            if ui.get_song_position() < SECONGS_BACKSKIP_THRESHOLD {
+                let mut songs_queue = queue.borrow_mut();
+                
+                if let Some(sog) = songs_queue.prev_song().cloned() {
+                    song = sog;
+                } else {
+                    song = songs_queue.current_song().clone();
+                }
+            } else {
+                let songs_queue = queue.borrow();
+
+                song = songs_queue.current_song().clone();
+            }
+
+            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), Rc::clone(&queue), Rc::clone(&media_cache), library_paranormal_convert(&song));
+        }
+    });
+
     ui.run()?;
 
     Ok(())
@@ -169,6 +243,7 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
             title: i.title.clone().into(),
             track_number: i.track_number.unwrap_or(-1),
             year: i.year.unwrap_or(-1),
+            cover_path: i.cover.clone().unwrap_or("?".to_string()).into(),
             cover
         };
 
@@ -176,4 +251,78 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
     }
 
     Ok(())
+}
+
+fn play_song(audio_player: Rc<Player>, ui: BackstopWindow, queue: Rc<RefCell<SongsQueue>>, media_cache: Rc<RefCell<MediaCache>>, song: LibrarySong) {
+    let song_path = song.path.clone();
+    let mut queue = queue.borrow_mut();
+
+    let cur_song_idx = media_cache.borrow().songs().iter()
+        .position(|x| *x.filepath == *song.path)
+        .expect("chose a song somehow that doesnt exit (???)") as i32;
+    *queue = SongsQueue::create_from_cache(&*media_cache.borrow(), cur_song_idx);
+
+    ui.set_current_song(song);
+    ui.set_playing(true);
+    ui.set_paused(false);
+    ui.set_song_position(0);
+
+    let file = File::open(song_path).unwrap();
+    let source = Decoder::try_from(file).unwrap();
+
+    audio_player.clear();
+    audio_player.append(source);
+    audio_player.play();
+}
+
+// fn library_normal_convert(song: LibrarySong) -> SongFileInfo {
+//     SongFileInfo {
+//         filepath: PathBuf::from(song.path.to_string()),
+//         title: song.title.to_string(),
+//         length: Duration::from_secs(song.length as u64),
+//         artist: song.artist.to_string(),
+//         album_artist: if song.album_artist == "?" { None } else { Some(song.album_artist.to_string()) },
+//         album: if song.album == "?" { None } else { Some(song.album.to_string()) },
+//         track_number: if song.track_number == -1 { None } else { Some(song.track_number) },
+//         year: if song.year == -1 { None } else { Some(song.year) },
+//         cover: if song.cover_path == "?" { None } else { Some(song.cover_path.to_string()) }
+//     }
+// }
+
+fn library_paranormal_convert(song: &SongFileInfo) -> LibrarySong {
+    let mut path = constants::conf_dir();
+    path.push("covers");
+    let cover_image;
+
+    if let Some(cover_path) = song.cover.clone() {
+        path.push(cover_path);
+
+        if let Ok(image) = image::open(path) {
+            cover_image = image.into_rgba8();
+        } else {
+            cover_image = image::load_from_memory(PLACEHOLDER_COVER)
+                .expect("placeholder coverart should process correctly")
+                .into_rgba8();
+        }
+    } else {
+        cover_image = image::load_from_memory(PLACEHOLDER_COVER)
+            .expect("placeholder coverart should process correctly")
+            .into_rgba8();
+    }
+
+    let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(cover_image.as_raw(), cover_image.width(), cover_image.height());
+    let cover = Image::from_rgba8(buffer);
+
+    LibrarySong {
+        album: song.album.clone().unwrap_or("".to_string()).into(),
+        album_artist: song.album_artist.clone().unwrap_or("".to_string()).into(),
+        artist: song.artist.clone().into(),
+        length: song.length.as_secs() as i32,
+        path: song.filepath.to_string_lossy().to_string().into(),
+        title: song.title.clone().into(),
+        track_number: song.track_number.unwrap_or(-1),
+        year: song.year.unwrap_or(-1),
+        cover_path: song.cover.clone().unwrap_or("?".to_string()).into(),
+        cover
+    }
 }

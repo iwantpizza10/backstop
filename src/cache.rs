@@ -129,7 +129,7 @@ impl MediaCache {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct SongFileInfo {
     pub filepath: PathBuf,
     pub title: String,
