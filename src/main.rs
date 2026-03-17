@@ -1,9 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{cell::RefCell, error::Error, fs::File, rc::Rc, time::Duration};
+use std::{cell::RefCell, error::Error, fs::File, path::PathBuf, rc::Rc, time::Duration};
 use backstop::{cache::{self, CacheState, MediaCache, SongFileInfo, SortType}, constants, queue::SongsQueue, settings::BackstopSettings};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
-use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, VecModel};
+use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 
 const PLACEHOLDER_COVER: &[u8] = include_bytes!("../ui/res/cover_placeholder.png");
 const SECONGS_BACKSKIP_THRESHOLD: i32 = 5;
@@ -37,8 +37,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         media_cache.borrow().save_to_disk().unwrap();
     }
 
-    let timer = slint::Timer::default();
-    timer.start(slint::TimerMode::Repeated, Duration::from_millis(250), {
+    let ui_time_updater = Timer::default();
+    ui_time_updater.start(TimerMode::Repeated, Duration::from_millis(250), {
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
         let queue = Rc::clone(&songs_queue);
@@ -49,6 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             
             if queue.borrow().songs().len() != 0 && *last_check.borrow() == audio_player.get_pos() && !ui.get_paused() {
                 let song;
+                let mut should_play = true;
 
                 {
                     let mut songs_queue = queue.borrow_mut();
@@ -56,11 +57,18 @@ fn main() -> Result<(), Box<dyn Error>> {
                     if let Some(sog) = songs_queue.next_song().cloned() {
                         song = sog;
                     } else {
-                        song = songs_queue.current_song().clone();
+                        if let Some(sog) = songs_queue.current_song().cloned() {
+                            song = sog;
+                        } else {
+                            should_play = false;
+                            song = SongFileInfo::dummy();
+                        }
                     }
                 }
 
-                play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+                if should_play {
+                    play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+                }
             }
 
             *last_check.borrow_mut() = audio_player.get_pos();
@@ -157,6 +165,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
+    ui.on_remove_media_directory({
+        let settings = Rc::clone(&settings);
+        let ui = ui.as_weak().unwrap();
+        
+        move |dir| {
+            let dirs_rc = ui.get_media_directories();
+            let media_dirs: &VecModel<SharedString> = dirs_rc.as_any().downcast_ref().expect("media_dirs_rc downcast should downcast properly");
+            let dirs: Vec<_> = media_dirs.iter().filter(|x| *x != dir).collect();
+
+            media_dirs.set_vec(dirs);
+            settings.borrow_mut().remove_media_directory(PathBuf::from(dir.to_string()));
+        }
+    });
+
     ui.on_skip_forward({
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
@@ -164,6 +186,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         move || {
             let song;
+            let mut should_play = true;
 
             {
                 let mut songs_queue = queue.borrow_mut();
@@ -171,11 +194,18 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if let Some(sog) = songs_queue.next_song().cloned() {
                     song = sog;
                 } else {
-                    song = songs_queue.current_song().clone();
+                    if let Some(sog) = songs_queue.current_song().cloned() {
+                        song = sog;
+                    } else {
+                        should_play = false;
+                        song = SongFileInfo::dummy();
+                    }
                 }
             }
 
-            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+            if should_play {
+                play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+            }
         }
     });
 
@@ -186,6 +216,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         move || {
             let song;
+            let mut should_play = true;
 
             if ui.get_song_position() < SECONGS_BACKSKIP_THRESHOLD {
                 let mut songs_queue = queue.borrow_mut();
@@ -193,15 +224,27 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if let Some(sog) = songs_queue.prev_song().cloned() {
                     song = sog;
                 } else {
-                    song = songs_queue.current_song().clone();
+                    if let Some(sog) = songs_queue.current_song().cloned() {
+                        song = sog;
+                    } else {
+                        should_play = false;
+                        song = SongFileInfo::dummy();
+                    }
                 }
             } else {
                 let songs_queue = queue.borrow();
 
-                song = songs_queue.current_song().clone();
+                if let Some(sog) = songs_queue.current_song().cloned() {
+                    song = sog;
+                } else {
+                    should_play = false;
+                    song = SongFileInfo::dummy();
+                }
             }
 
-            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+            if should_play {
+                play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+            }
         }
     });
 

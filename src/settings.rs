@@ -103,4 +103,11 @@ impl BackstopSettings {
     pub fn add_media_directory(&mut self, directory: PathBuf) {
         self.media_directories.push(directory);
     }
+
+    pub fn remove_media_directory(&mut self, directory: PathBuf) {
+        self.media_directories = self.media_directories.iter_mut()
+            .filter(|x| **x != directory)
+            .map(|x| x.clone())
+            .collect();
+    }
 }

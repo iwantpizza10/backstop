@@ -34,8 +34,12 @@ impl SongsQueue {
         &self.songs
     }
 
-    pub fn current_song(&self) -> &SongFileInfo {
-        &self.songs[self.position]
+    pub fn current_song(&self) -> Option<&SongFileInfo> {
+        if self.position >= self.songs.len() {
+            return None
+        }
+
+        Some(&self.songs[self.position])
     }
 
     pub fn next_song(&mut self) -> Option<&SongFileInfo> {
@@ -80,6 +84,10 @@ impl SongsQueue {
     }
 
     pub fn unshuffle(&mut self) {
+        if self.position >= self.songs.len() {
+            return
+        }
+
         let cur_song = self.songs[self.position].title.clone();
         self.songs = self.songs_unshuffled.clone();
         self.position = self.songs.iter()

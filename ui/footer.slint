@@ -40,6 +40,9 @@ export component FooterBar {
     callback pause();
     in-out property <MenuState> menustate;
     in property <LibrarySong> current_song;
+    in property <color> background;
+    in property <color> button_disabled_color;
+    in property <color> button_enabled_color;
     in property <float> volume;
     in property <bool> playing;
     in property <bool> shuffle;
@@ -57,6 +60,12 @@ export component FooterBar {
 
     pure function seconds_to_timestamp(seconds: int) -> string {
         return Math.floor(seconds / 60) + ":" + padded_int(Math.mod(seconds, 60));
+    }
+
+    Rectangle {
+        width: 1366px;
+        height: 96px;
+        background: background;
     }
 
     HorizontalLayout {
@@ -109,7 +118,7 @@ export component FooterBar {
             height: 96px;
             alignment: center;
             spacing: 32px;
-            padding-bottom: 8px;
+            padding-bottom: 24px;
 
             HorizontalLayout {
                 spacing: 8px;
@@ -145,8 +154,8 @@ export component FooterBar {
 
                 FooterButton {
                     icon: IconSet.Shuffle;
-                    color: shuffle ? #ffffff : #aaaaaa;
-                    bg_color: shuffle ? #445566 : #223344;
+                    color: shuffle ? #ffffff : #999999;
+                    bg_color: shuffle ? button_enabled_color : button_disabled_color;
 
                     clicked => { toggle_shuffle() }
                 }
@@ -154,7 +163,7 @@ export component FooterBar {
                 FooterButton {
                     icon: IconSet.ArrowBigLeftDash;
                     color: #ffffff;
-                    bg_color: #445566;
+                    bg_color: button_enabled_color;
 
                     clicked => { skip_backward() }
                 }
@@ -162,7 +171,7 @@ export component FooterBar {
                 FooterButton {
                     icon: paused ? IconSet.Play : IconSet.Pause;
                     color: #ffffff;
-                    bg_color: #445566;
+                    bg_color: button_enabled_color;
 
                     clicked => {
                         if paused {
@@ -176,15 +185,15 @@ export component FooterBar {
                 FooterButton {
                     icon: IconSet.ArrowBigRightDash;
                     color: #ffffff;
-                    bg_color: #445566;
+                    bg_color: button_enabled_color;
 
                     clicked => { skip_forward() }
                 }
 
                 FooterButton {
                     icon: IconSet.Repeat;
-                    color: repeat ? #ffffff : #aaaaaa;
-                    bg_color: repeat ? #445566 : #223344;
+                    color: repeat ? #ffffff : #999999;
+                    bg_color: repeat ? button_enabled_color : button_disabled_color;
 
                     clicked => { toggle_repeat() }
                 }
@@ -195,7 +204,7 @@ export component FooterBar {
             min-width: 1366px / 3;
             max-width: 1366px / 3;
             alignment: end;
-            padding-right: 4px;
+            padding-right: 27px; // uhh smth smth (96px footer height - 42px button height) / 2 = 27px per side
             spacing: 8px;
 
             VerticalLayout {
@@ -225,10 +234,15 @@ export component FooterBar {
                 width: 42px;
                 icon: IconSet.Settings2;
                 color: #ffffff;
-                bg_color: #445566;
+                bg_color: button_disabled_color;
 
                 clicked => { menustate = MenuState.Settings }
             }
+
+            // Image {
+            //     source: @image-url("./res/backstopoutline.png");
+            //     width: 64px;
+            // }
         }
     }
 }

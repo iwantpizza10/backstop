@@ -142,6 +142,21 @@ pub struct SongFileInfo {
     pub cover: Option<String>
 }
 
+impl SongFileInfo {
+    pub fn dummy() -> Self {
+        Self {
+            filepath: PathBuf::new(),
+            title: String::new(),
+            length: Duration::ZERO,
+            artist: String::new(),
+            album_artist: None,
+            album: None,
+            track_number: None,
+            year: None,
+            cover: None
+        }
+    }
+}
 
 pub fn scan_dir(dir: &Path) -> Result<Vec<SongFileInfo>, io::Error> {
     let x = read_dir(dir)?;

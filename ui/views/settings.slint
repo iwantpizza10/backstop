@@ -1,0 +1,106 @@
+import { MenuState } from "../types.slint";
+import { Button, HorizontalBox } from "std-widgets.slint";
+
+export component SettingsView {
+    in-out property <MenuState> menustate;
+    in property <[string]> media_directories;
+    in property <color> button_disabled_color;
+    in property <color> button_enabled_color;
+    callback remove_media_directory(string);
+    callback add_media_directory();
+    callback rescan_library();
+
+    width: 1366px;
+
+    VerticalLayout {
+        spacing: 64px;
+        padding-bottom: 128px;
+
+        HorizontalLayout {
+            width: 100%;
+            alignment: center;
+
+            Image {
+                source: @image-url("../res/backstopfull.png");
+                width: 512px;
+                horizontal-alignment: center;
+            }
+        }
+
+        VerticalLayout {
+            Text {
+                horizontal-alignment: center;
+                text: "Settings";
+                font-size: 48px;
+            }
+
+            HorizontalLayout {
+                width: 100%;
+                alignment: center;
+                padding-top: 64px;
+
+                VerticalLayout {
+                    padding: 8px;
+                    width: 60%;
+
+                    Text {
+                        text: "Media Directories";
+                        font-size: 24px;
+                        horizontal-alignment: center;
+                    }
+
+                    Text {
+                        text: "(click to remove one)\n";
+                        font-size: 20px;
+                        horizontal-alignment: center;
+                    }
+    
+                    for i in media_directories: Rectangle {
+                        height: 26px;
+                        background: button_disabled_color;
+
+                        TouchArea {
+                            x: 0;
+                            width: 100%;
+                            height: 26px;
+                            clicked => { remove_media_directory(i) }
+                        }
+
+                        Text {
+                            y: 4px;
+                            text: i;
+                            font-size: 18px;
+                            horizontal-alignment: left;
+                        }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                alignment: center;
+                padding-top: 64px;
+                spacing: 16px;
+
+                Button {
+                    text: "Add a Media Directory";
+
+                    clicked => { add_media_directory() }
+                }
+
+                Button {
+                    text: "Scan Library";
+                    
+                    clicked => { rescan_library() }
+                }
+
+                Button {
+                    text: "Close";
+
+                    clicked => {
+                        menustate = MenuState.Main
+                    }
+                }
+            }
+        }
+    }
+}

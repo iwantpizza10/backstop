@@ -3,6 +3,8 @@ import { Button } from "std-widgets.slint";
 import { OnboardingView } from "views/onboarding.slint";
 import { MainView } from "views/main.slint";
 import { FooterBar } from "footer.slint";
+import { WelcomeView } from "views/welcome.slint";
+import { SettingsView } from "views/settings.slint";
 
 export component BackstopWindow inherits Window {
     in-out property <MenuState> menustate: Init;
@@ -15,6 +17,7 @@ export component BackstopWindow inherits Window {
     in property <bool> paused: false;
     in property <bool> repeat: false;
     in property <int> song_position: 0;
+    callback remove_media_directory(string);
     callback add_media_directory();
     callback rescan_library();
     callback pause();
@@ -30,7 +33,7 @@ export component BackstopWindow inherits Window {
     title: "Backstop";
     width: 1366px;
     height: 768px;
-    background: #112233;
+    background: #0b071b;
 
     if menustate == MenuState.Onboarding: OnboardingView {
         menustate <=> menustate;
@@ -39,16 +42,37 @@ export component BackstopWindow inherits Window {
         rescan_library => { rescan_library() }
     }
 
+    // if menustate == MenuState.Welcome: WelcomeView {
+        // menustate <=> menustate;
+
+        // add_media_directory => { add_media_directory() }
+        // rescan_library => { rescan_library() }
+    // }
+
     if menustate == MenuState.Main: MainView {
         media_library: media_library;
 
         play_song(a) => { play_song(a) }
     }
 
+    if menustate == MenuState.Settings: SettingsView {
+        menustate <=> menustate;
+        media_directories: media_directories;
+        button_disabled_color: #4b0fa3;
+        button_enabled_color: #7221ea;
+
+        add_media_directory => { add_media_directory() }
+        remove_media_directory(a) => { remove_media_directory(a) }
+        rescan_library => { rescan_library() }
+    }
+
     FooterBar {
         x: 0px;
         y: 768px - self.height;
         height: 96px;
+        background: #170f37;
+        button_disabled_color: #4b0fa3;
+        button_enabled_color: #7221ea;
 
         menustate <=> menustate;
         current_song: current_song;

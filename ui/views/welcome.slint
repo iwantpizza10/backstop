@@ -1,7 +1,7 @@
 import { MenuState } from "../types.slint";
 import { Button, HorizontalBox } from "std-widgets.slint";
 
-export component OnboardingView {
+export component WelcomeView {
     in-out property <MenuState> menustate;
     callback add_media_directory();
     callback rescan_library();
@@ -26,12 +26,12 @@ export component OnboardingView {
         VerticalLayout {
             Text {
                 horizontal-alignment: center;
-                text: "Looks like you're new here!";
+                text: "Welcome back!";
                 font-size: 48px;
             }
 
             Text {
-                text: "Welcome to Backstop. Get started by:";
+                text: "Welcome back to Backstop. Get started again by:";
                 horizontal-alignment: center;
                 font-size: 24px;
             }
@@ -48,7 +48,7 @@ export component OnboardingView {
                 }
 
                 Button {
-                    text: "Scan Library";
+                    text: "Rescan Library";
                     
                     clicked => { rescan_library() }
                 }
