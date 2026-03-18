@@ -1,12 +1,14 @@
 import { MenuState } from "../types.slint";
-import { Button, HorizontalBox } from "std-widgets.slint";
+import { Button, HorizontalBox, Slider } from "std-widgets.slint";
 
 export component SettingsView {
     in-out property <MenuState> menustate;
     in property <[string]> media_directories;
     in property <color> button_disabled_color;
     in property <color> button_enabled_color;
+    in property <float> playback_speed;
     callback remove_media_directory(string);
+    callback set_playback_speed(float);
     callback add_media_directory();
     callback rescan_library();
 
@@ -34,7 +36,7 @@ export component SettingsView {
                 font-size: 48px;
             }
 
-            HorizontalLayout {
+            if media_directories.length > 0: HorizontalLayout {
                 width: 100%;
                 alignment: center;
                 padding-top: 64px;
@@ -72,6 +74,28 @@ export component SettingsView {
                             font-size: 18px;
                             horizontal-alignment: left;
                         }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                padding: 16px;
+
+                Text {
+                    horizontal-alignment: center;
+                    text: "Playback Speed (\{Math.round(playback_speed * 100)}%)";
+                }
+
+                HorizontalLayout {
+                    alignment: center;
+
+                    Slider {
+                        maximum: 40;
+                        minimum: 1;
+                        value: playback_speed * 20;
+                        width: 384px;
+
+                        changed(value) => { set_playback_speed(Math.floor(value) / 20) };
                     }
                 }
             }

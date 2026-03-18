@@ -12,6 +12,7 @@ export component BackstopWindow inherits Window {
     in property <LibrarySong> current_song;
     in property <[string]> media_directories;
     in property <float> volume;
+    in property <float> playback_speed;
     in property <bool> playing: false;
     in property <bool> shuffle: false;
     in property <bool> paused: false;
@@ -22,12 +23,13 @@ export component BackstopWindow inherits Window {
     callback rescan_library();
     callback pause();
     callback resume();
-    callback seek(int);
+    callback seek(int); // NOT added
     callback toggle_shuffle();
     callback skip_backward();
     callback skip_forward();
-    callback toggle_repeat();
+    callback toggle_repeat(); // NOT added
     callback set_volume(float);
+    callback set_playback_speed(float);
     callback play_song(LibrarySong);
 
     title: "Backstop";
@@ -60,9 +62,11 @@ export component BackstopWindow inherits Window {
         media_directories: media_directories;
         button_disabled_color: #4b0fa3;
         button_enabled_color: #7221ea;
+        playback_speed: playback_speed;
 
         add_media_directory => { add_media_directory() }
         remove_media_directory(a) => { remove_media_directory(a) }
+        set_playback_speed(a) => { set_playback_speed(a) }
         rescan_library => { rescan_library() }
     }
 
@@ -82,6 +86,7 @@ export component BackstopWindow inherits Window {
         paused: paused;
         repeat: repeat;
         song_position: song_position;
+        playback_speed: playback_speed;
 
         set_volume(a) => { set_volume(a) }
         toggle_shuffle => { toggle_shuffle() }

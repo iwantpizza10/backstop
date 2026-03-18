@@ -79,6 +79,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone())?;
 
     ui.set_volume(settings.borrow().volume());
+    ui.set_playback_speed(settings.borrow().playback_speed());
     ui.set_menustate(if settings.borrow().is_first_launch() { MenuState::Onboarding } else { MenuState::Welcome });
     ui.set_media_library(media_cache_rc.clone());
     ui.set_media_directories(media_dirs_rc.clone());
@@ -262,6 +263,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                 queue.shuffle();
                 ui.set_shuffle(true);
             }
+        }
+    });
+
+    ui.on_set_playback_speed({
+        let ui = ui.as_weak().unwrap();
+        let audio_player = Rc::clone(&audio_player);
+        let settings = Rc::clone(&settings);
+
+        move |speed| {
+            let mut settings = settings.borrow_mut();
+
+            settings.set_playback_speed(speed);
+            audio_player.set_speed(speed);
+            ui.set_playback_speed(speed);
         }
     });
 

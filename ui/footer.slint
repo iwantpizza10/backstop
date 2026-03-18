@@ -44,6 +44,7 @@ export component FooterBar {
     in property <color> button_disabled_color;
     in property <color> button_enabled_color;
     in property <float> volume;
+    in property <float> playback_speed;
     in property <bool> playing;
     in property <bool> shuffle;
     in property <bool> paused;
@@ -135,7 +136,7 @@ export component FooterBar {
                     // value: song_position;
                     // maximum: current_song.length;
                     // minimum: 0;
-                    progress: song_position / current_song.length;
+                    progress: song_position / (current_song.length / playback_speed);
                     height: 8px;
                     width: 256px;
 
@@ -143,7 +144,7 @@ export component FooterBar {
                 }
 
                 Text {
-                    text: seconds_to_timestamp(current_song.length);
+                    text: seconds_to_timestamp(Math.floor(current_song.length / playback_speed));
                     horizontal-alignment: left;
                     vertical-alignment: center;
                 }
