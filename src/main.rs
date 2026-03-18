@@ -50,10 +50,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             if queue.borrow().songs().len() != 0 && *last_check.borrow() == audio_player.get_pos() && !ui.get_paused() {
                 let song;
                 let mut should_play = true;
+                let mut songs_queue = queue.borrow_mut();
 
-                {
-                    let mut songs_queue = queue.borrow_mut();
-
+                if ui.get_repeat() {
+                    if let Some(sog) = songs_queue.current_song().cloned() {
+                        song = sog;
+                    } else {
+                        should_play = false;
+                        song = SongFileInfo::dummy();
+                    }
+                } else {
                     if let Some(sog) = songs_queue.next_song().cloned() {
                         song = sog;
                     } else {
@@ -263,6 +269,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                 queue.shuffle();
                 ui.set_shuffle(true);
             }
+        }
+    });
+
+    ui.on_toggle_repeat({
+        let ui = ui.as_weak().unwrap();
+
+        move || {
+            ui.set_repeat(!ui.get_repeat());
         }
     });
 

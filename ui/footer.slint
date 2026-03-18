@@ -35,7 +35,6 @@ export component FooterBar {
     callback toggle_repeat();
     callback skip_backward();
     callback skip_forward();
-    callback seek(int);
     callback resume();
     callback pause();
     in-out property <MenuState> menustate;
@@ -131,16 +130,10 @@ export component FooterBar {
                     vertical-alignment: center;
                 }
 
-                // Slider {
                 ProgressIndicator {
-                    // value: song_position;
-                    // maximum: current_song.length;
-                    // minimum: 0;
                     progress: song_position / (current_song.length / playback_speed);
                     height: 8px;
                     width: 256px;
-
-                    // changed(value) => { seek(value) }
                 }
 
                 Text {

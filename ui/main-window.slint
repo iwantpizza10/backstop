@@ -23,7 +23,6 @@ export component BackstopWindow inherits Window {
     callback rescan_library();
     callback pause();
     callback resume();
-    callback seek(int); // NOT added
     callback toggle_shuffle();
     callback skip_backward();
     callback skip_forward();
@@ -93,7 +92,6 @@ export component BackstopWindow inherits Window {
         toggle_repeat => { toggle_repeat() }
         skip_backward => { skip_backward() }
         skip_forward => { skip_forward() }
-        seek(a) => { seek(a) }
         resume => { resume() }
         pause => { pause() }
     }
