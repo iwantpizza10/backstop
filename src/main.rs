@@ -51,6 +51,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.set_menustate(if settings.borrow().is_first_launch() { MenuState::Onboarding } else { MenuState::Welcome });
     ui.set_media_library(media_cache_rc.clone());
     ui.set_media_directories(media_dirs_rc.clone());
+    settings.borrow_mut().set_is_first_launch(false);
+    let _ = settings.borrow().save_to_disk();
 
     let ui_time_updater = Timer::default();
     ui_time_updater.start(TimerMode::Repeated, Duration::from_millis(250), {
@@ -161,6 +163,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let mut settings = settings.borrow_mut();
 
             settings.set_volume(vol_db);
+            let _ = settings.save_to_disk();
             audio_player.set_volume(settings.volume_linear());
             ui.set_volume(vol_db);
         }
@@ -183,9 +186,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 if let Some(dir) = dir {
                     let dir_path = dir.path().to_path_buf();
+                    let mut settings = settings.borrow_mut();
 
                     media_dirs.push(dir_path.to_string_lossy().to_string().into());
-                    settings.borrow_mut().add_media_directory(dir_path);
+                    settings.add_media_directory(dir_path);
+                    let _ = settings.save_to_disk();
                 }
             })).unwrap();
         }
@@ -199,9 +204,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             let dirs_rc = ui.get_media_directories();
             let media_dirs: &VecModel<SharedString> = dirs_rc.as_any().downcast_ref().expect("media_dirs_rc downcast should downcast properly");
             let dirs: Vec<_> = media_dirs.iter().filter(|x| *x != dir).collect();
+            let mut settings = settings.borrow_mut();
 
             media_dirs.set_vec(dirs);
-            settings.borrow_mut().remove_media_directory(PathBuf::from(dir.to_string()));
+            settings.remove_media_directory(PathBuf::from(dir.to_string()));
+            let _ = settings.save_to_disk();
         }
     });
 
@@ -308,6 +315,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             settings.set_playback_speed(speed);
             audio_player.set_speed(speed);
             ui.set_playback_speed(speed);
+            let _ = settings.save_to_disk();
         }
     });
 
