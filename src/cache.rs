@@ -1,8 +1,9 @@
-use std::{error::Error, ffi::OsStr, fs::{self, read_dir}, io, path::{Path, PathBuf}, time::Duration};
+use std::{error::Error, ffi::OsStr, fs, io, path::{Path, PathBuf}, time::Duration};
 use audiotags::{MimeType, Tag};
 use serde::{Deserialize, Serialize};
 use serde_binary::binary_stream::Endian;
 use uuid::Uuid;
+use futures_lite::stream::StreamExt;
 use crate::constants;
 
 #[derive(Debug, PartialEq)]
@@ -86,12 +87,12 @@ impl MediaCache {
         Ok(())
     }
 
-    pub fn rescan_library(&mut self, dirs: &[PathBuf]) -> Result<(), io::Error> {
+    pub async fn rescan_library(&mut self, dirs: &[PathBuf]) -> Result<(), io::Error> {
         let mut songs = vec![];
         clear_covers_cache()?;
 
         for dir in dirs {
-            let mut dir_scan = scan_dir(dir)?;
+            let mut dir_scan = scan_dir(dir).await?;
 
             songs.append(&mut dir_scan);
         }
@@ -158,23 +159,23 @@ impl SongFileInfo {
     }
 }
 
-pub fn scan_dir(dir: &Path) -> Result<Vec<SongFileInfo>, io::Error> {
-    let x = read_dir(dir)?;
+pub async fn scan_dir(dir: &Path) -> Result<Vec<SongFileInfo>, io::Error> {
+    let x = async_fs::read_dir(dir).await?;
     let mut songs_vec: Vec<SongFileInfo> = vec![];
 
-    for i in x {
+    for i in x.collect::<Vec<_>>().await {
         let i = i?;
-        let file_type = i.file_type()?;
+        let file_type = i.file_type().await?;
 
         if file_type.is_dir() {
-            let mut scanned_dir = scan_dir(&i.path())?;
+            let mut scanned_dir = Box::pin(scan_dir(&i.path())).await?;
 
             songs_vec.append(&mut scanned_dir);
         } else {
             let path = i.path();
 
             if is_fileext_ok(path.extension()) {
-                let info = scan_info(i.path());
+                let info = scan_info(i.path()).await;
 
                 if let Ok(info) = info {
                     songs_vec.push(info);
@@ -198,7 +199,7 @@ fn is_fileext_ok(ext: Option<&OsStr>) -> bool {
     return false;
 }
 
-fn scan_info(path: PathBuf) -> Result<SongFileInfo, Box<dyn Error>> {
+async fn scan_info(path: PathBuf) -> Result<SongFileInfo, Box<dyn Error>> {
     let tagged_file = Tag::default().read_from_path(&path)?;
     let length;
     let album_title;

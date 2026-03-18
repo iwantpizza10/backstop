@@ -4,6 +4,7 @@ use std::{cell::RefCell, error::Error, fs::File, path::PathBuf, rc::Rc, time::Du
 use backstop::{cache::{self, CacheState, MediaCache, SongFileInfo, SortType}, constants, queue::SongsQueue, settings::BackstopSettings};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
 use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
+use async_compat::Compat;
 
 const PLACEHOLDER_COVER: &[u8] = include_bytes!("../ui/res/cover_placeholder.png");
 const SECONGS_BACKSKIP_THRESHOLD: i32 = 5;
@@ -31,11 +32,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     audio_player.set_volume(settings.borrow().volume_linear());
 
     if media_cache.borrow().state() == &CacheState::Dead {
-        // todo: a ui for if/when these fail
+        let media_cache = Rc::clone(&media_cache);
+        let settings = Rc::clone(&settings);
 
-        media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).unwrap();
-        media_cache.borrow().save_to_disk().unwrap();
+        slint::spawn_local(Compat::new(async move {
+            // todo: a ui for if/when these fail
+
+            media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).await.unwrap();
+            media_cache.borrow().save_to_disk().unwrap();
+        })).unwrap();
     }
+
+    media_cache.borrow_mut().sort(SortType::TitleAlphabetical);
+    load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone())?;
+
+    ui.set_volume(settings.borrow().volume());
+    ui.set_playback_speed(settings.borrow().playback_speed());
+    ui.set_menustate(if settings.borrow().is_first_launch() { MenuState::Onboarding } else { MenuState::Welcome });
+    ui.set_media_library(media_cache_rc.clone());
+    ui.set_media_directories(media_dirs_rc.clone());
 
     let ui_time_updater = Timer::default();
     ui_time_updater.start(TimerMode::Repeated, Duration::from_millis(250), {
@@ -46,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         move || {
             ui.set_song_position(audio_player.get_pos().as_secs() as i32);
-            
+
             if queue.borrow().songs().len() != 0 && *last_check.borrow() == audio_player.get_pos() && !ui.get_paused() {
                 let song;
                 let mut should_play = true;
@@ -81,15 +96,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    media_cache.borrow_mut().sort(SortType::TitleAlphabetical);
-    load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone())?;
-
-    ui.set_volume(settings.borrow().volume());
-    ui.set_playback_speed(settings.borrow().playback_speed());
-    ui.set_menustate(if settings.borrow().is_first_launch() { MenuState::Onboarding } else { MenuState::Welcome });
-    ui.set_media_library(media_cache_rc.clone());
-    ui.set_media_directories(media_dirs_rc.clone());
-
     ui.on_play_song({
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
@@ -113,10 +119,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         let settings = Rc::clone(&settings);
 
         move || {
-            media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).unwrap();
-            media_cache.borrow().save_to_disk().unwrap();
+            let media_cache = Rc::clone(&media_cache);
+            let settings = Rc::clone(&settings);
+            let media_cache_rc = media_cache_rc.clone();
 
-            load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone()).unwrap();
+            slint::spawn_local(Compat::new(async move {
+                media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).await.unwrap();
+                media_cache.borrow().save_to_disk().unwrap();
+
+                load_cache_to_model(&media_cache.borrow(), media_cache_rc).unwrap();
+            })).unwrap();
         }
     });
 
@@ -157,25 +169,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.on_add_media_directory({
         let settings = Rc::clone(&settings);
         let ui = ui.as_weak().unwrap();
-        
+
         move || {
-            let dirs_rc = ui.get_media_directories();
-            let media_dirs: &VecModel<SharedString> = dirs_rc.as_any().downcast_ref().expect("media_dirs_rc downcast should downcast properly");
+            let ui = ui.as_weak().unwrap();
+            let settings = Rc::clone(&settings);
 
-            let dir = rfd::FileDialog::new()
-                .pick_folder();
+            slint::spawn_local(Compat::new(async move {
+                let dirs_rc = ui.get_media_directories();
+                let media_dirs: &VecModel<SharedString> = dirs_rc.as_any().downcast_ref().expect("media_dirs_rc downcast should downcast properly");
 
-            if let Some(dir) = dir {
-                media_dirs.push(dir.to_string_lossy().to_string().into());
-                settings.borrow_mut().add_media_directory(dir);
-            }
+                let dir = rfd::AsyncFileDialog::new()
+                    .pick_folder().await;
+
+                if let Some(dir) = dir {
+                    let dir_path = dir.path().to_path_buf();
+
+                    media_dirs.push(dir_path.to_string_lossy().to_string().into());
+                    settings.borrow_mut().add_media_directory(dir_path);
+                }
+            })).unwrap();
         }
     });
 
     ui.on_remove_media_directory({
         let settings = Rc::clone(&settings);
         let ui = ui.as_weak().unwrap();
-        
+
         move |dir| {
             let dirs_rc = ui.get_media_directories();
             let media_dirs: &VecModel<SharedString> = dirs_rc.as_any().downcast_ref().expect("media_dirs_rc downcast should downcast properly");
@@ -195,18 +214,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             let song;
             let mut should_play = true;
 
-            {
-                let mut songs_queue = queue.borrow_mut();
+            let mut songs_queue = queue.borrow_mut();
 
-                if let Some(sog) = songs_queue.next_song().cloned() {
+            if let Some(sog) = songs_queue.next_song().cloned() {
+                song = sog;
+            } else {
+                if let Some(sog) = songs_queue.current_song().cloned() {
                     song = sog;
                 } else {
-                    if let Some(sog) = songs_queue.current_song().cloned() {
-                        song = sog;
-                    } else {
-                        should_play = false;
-                        song = SongFileInfo::dummy();
-                    }
+                    should_play = false;
+                    song = SongFileInfo::dummy();
                 }
             }
 
