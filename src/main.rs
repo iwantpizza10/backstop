@@ -19,18 +19,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let media_cache_model: Rc<VecModel<LibrarySong>> = Rc::new(VecModel::from(vec![]));
     let media_cache_rc = ModelRc::from(media_cache_model);
 
-    let media_dirs_model: Rc<VecModel<SharedString>> = Rc::new(VecModel::from(vec![]));
-    let media_dirs_rc = ModelRc::from(media_dirs_model);
-
     let settings = Rc::new(RefCell::new(BackstopSettings::load_else_new()));
     let mut audio_device_handle = DeviceSinkBuilder::open_default_sink().expect("open default audio stream");
     audio_device_handle.log_on_drop(false);
     let audio_player = Rc::new(Player::connect_new(&audio_device_handle.mixer()));
-
+    
     let songs_queue = Rc::new(RefCell::new(SongsQueue::new()));
-
+    
     audio_player.set_volume(settings.borrow().volume_linear());
 
+    let media_dirs_temp = settings.borrow().media_directories().iter()
+        .map(|x| x.to_string_lossy().to_string().into())
+        .collect::<Vec<SharedString>>();
+    let media_dirs_model: Rc<VecModel<SharedString>> = Rc::new(VecModel::from(media_dirs_temp));
+    let media_dirs_rc = ModelRc::from(media_dirs_model);
+    
     if media_cache.borrow().state() == &CacheState::Dead {
         let media_cache = Rc::clone(&media_cache);
         let settings = Rc::clone(&settings);
@@ -119,17 +122,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.on_rescan_library({
         let media_cache = Rc::clone(&media_cache);
         let settings = Rc::clone(&settings);
+        let ui = ui.as_weak().unwrap();
 
         move || {
             let media_cache = Rc::clone(&media_cache);
             let settings = Rc::clone(&settings);
             let media_cache_rc = media_cache_rc.clone();
+            let ui = ui.as_weak().unwrap();
 
             slint::spawn_local(Compat::new(async move {
+                let original_menu_state = ui.get_menustate();
+
+                ui.set_menustate(MenuState::Reindexing);
+
                 media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).await.unwrap();
                 media_cache.borrow().save_to_disk().unwrap();
 
                 load_cache_to_model(&media_cache.borrow(), media_cache_rc).unwrap();
+
+                ui.set_menustate(original_menu_state);
             })).unwrap();
         }
     });
@@ -180,6 +191,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             slint::spawn_local(Compat::new(async move {
                 let dirs_rc = ui.get_media_directories();
                 let media_dirs: &VecModel<SharedString> = dirs_rc.as_any().downcast_ref().expect("media_dirs_rc downcast should downcast properly");
+                let original_menu_state = ui.get_menustate(); // originally orregano_menu_state
+
+                ui.set_menustate(MenuState::AddingDir);
 
                 let dir = rfd::AsyncFileDialog::new()
                     .pick_folder().await;
@@ -190,8 +204,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                     media_dirs.push(dir_path.to_string_lossy().to_string().into());
                     settings.add_media_directory(dir_path);
-                    let _ = settings.save_to_disk();
+                    println!("{:?}", settings.save_to_disk());
+
+                    ui.set_menustate(original_menu_state);
                 }
+
+                ui.set_menustate(original_menu_state);
             })).unwrap();
         }
     });

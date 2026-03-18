@@ -1,9 +1,9 @@
 import { MenuState, LibrarySong } from "./types.slint";
 import { Button } from "std-widgets.slint";
-import { OnboardingView } from "views/onboarding.slint";
+import { FirstButtonsView } from "views/firstbuttons.slint";
 import { MainView } from "views/main.slint";
+import { TextView } from "views/text.slint";
 import { FooterBar } from "footer.slint";
-import { WelcomeView } from "views/welcome.slint";
 import { SettingsView } from "views/settings.slint";
 
 export component BackstopWindow inherits Window {
@@ -26,7 +26,7 @@ export component BackstopWindow inherits Window {
     callback toggle_shuffle();
     callback skip_backward();
     callback skip_forward();
-    callback toggle_repeat(); // NOT added
+    callback toggle_repeat();
     callback set_volume(float);
     callback set_playback_speed(float);
     callback play_song(LibrarySong);
@@ -36,19 +36,13 @@ export component BackstopWindow inherits Window {
     height: 768px;
     background: #0b071b;
 
-    if menustate == MenuState.Onboarding: OnboardingView {
+    if menustate == MenuState.Onboarding || menustate == MenuState.Welcome: FirstButtonsView {
         menustate <=> menustate;
+        onboarding: menustate == MenuState.Onboarding;
 
         add_media_directory => { add_media_directory() }
         rescan_library => { rescan_library() }
     }
-
-    // if menustate == MenuState.Welcome: WelcomeView {
-        // menustate <=> menustate;
-
-        // add_media_directory => { add_media_directory() }
-        // rescan_library => { rescan_library() }
-    // }
 
     if menustate == MenuState.Main: MainView {
         media_library: media_library;
@@ -69,7 +63,12 @@ export component BackstopWindow inherits Window {
         rescan_library => { rescan_library() }
     }
 
-    FooterBar {
+    if menustate == MenuState.Reindexing || menustate == MenuState.AddingDir: TextView {
+        text: menustate == MenuState.Reindexing ? "Reindexing library..." : "Adding directory...";
+        subtext: "Please wait a moment...";
+    }
+
+    if menustate != MenuState.Reindexing && menustate != MenuState.AddingDir: FooterBar {
         x: 0px;
         y: 768px - self.height;
         height: 96px;
