@@ -546,7 +546,6 @@ fn set_discord_rpc(song: &LibrarySong, client: Rc<RefCell<DiscordIpcClient>>, se
             can_set = true;
 
             for i in list {
-                println!("comparing {} and {}", song.artist.to_lowercase(), i.to_lowercase());
                 if song.artist.to_lowercase() == i.to_lowercase() {
                     can_set = false;
                 }
