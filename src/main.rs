@@ -157,6 +157,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .expect("chose a song somehow that doesnt exit (???)") as i32;
             *songs_queue = SongsQueue::create_from_cache(&*media_cache.borrow(), cur_song_idx);
 
+            if ui.get_shuffle() {
+                songs_queue.shuffle();
+            }
+
             let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
 
             if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
@@ -212,6 +216,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         move || {
             ui.set_paused(true);
+
             audio_player.pause();
         }
     });
@@ -462,6 +467,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             });
 
             let _ = settings.borrow().save_to_disk();
+
+            if rpc_type != UIRichPresenceType::Disabled {
+                if let Err(_) = rpc_client.borrow_mut().connect() {
+                    ui.set_menustate(MenuState::LoadingError);
+                    ui.set_playing(false);
+                }
+            }
         }
     });
 
@@ -546,14 +558,14 @@ fn set_discord_rpc(song: &LibrarySong, client: Rc<RefCell<DiscordIpcClient>>, se
             can_set = true;
 
             for i in list {
-                if song.artist.to_lowercase() == i.to_lowercase() {
+                if song.artist.to_lowercase().contains(&i.to_lowercase()) || song.title.to_lowercase().contains(&i.to_lowercase()) {
                     can_set = false;
                 }
             }
         },
         RichPresenceType::Whitelist => {
             for i in list {
-                if song.artist.to_lowercase() == i.to_lowercase() {
+                if song.artist.to_lowercase().contains(&i.to_lowercase()) || song.title.to_lowercase().contains(&i.to_lowercase()) {
                     can_set = true;
                 }
             }
