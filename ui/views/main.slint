@@ -3,6 +3,7 @@ import { ScrollView, Button } from "std-widgets.slint";
 
 component SongView {
     in property <LibrarySong> song;
+    in property <duration> animation_tick;
     in property <int> col_count;
     property <length> card_width: (1366px / col_count) - 16px;
     callback play_song(LibrarySong);
@@ -33,7 +34,7 @@ component SongView {
                 vertical-scrollbar-policy: always-off;
                 horizontal-scrollbar-policy: always-off;
                 property <int> max_x_range: (card_width + 4px + text.width) / 1px;
-                property <int> tick_number: animation-tick() / (1s / 60);
+                property <int> tick_number: animation_tick / (1s / 60);
     
                 text := Text {
                     x: Math.floor(self.width / 1px) >= Math.floor(card_width / 1px) ?
@@ -61,6 +62,7 @@ component SongView {
 
 export component MainView {
     in property <[LibrarySong]> media_library;
+    in property <duration> animation_tick;
     callback play_song(LibrarySong);
     property <int> col_count: 8; // please make sure you update the songview counts when changing this
 
@@ -74,7 +76,6 @@ export component MainView {
         width: 1366px;
         vertical-scrollbar-policy: always-off;
         horizontal-scrollbar-policy: always-off;
-        // viewport-width: 1366px;
 
         GridLayout {
             for i in Math.floor(media_library.length / col_count): Row {
@@ -84,6 +85,7 @@ export component MainView {
                 SongView {
                     song: media_library[(i * col_count) + 0];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -91,6 +93,7 @@ export component MainView {
                 SongView {
                     song: media_library[(i * col_count) + 1];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -98,6 +101,7 @@ export component MainView {
                 SongView {
                     song: media_library[(i * col_count) + 2];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -105,6 +109,7 @@ export component MainView {
                 SongView {
                     song: media_library[(i * col_count) + 3];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -112,6 +117,7 @@ export component MainView {
                 SongView {
                     song: media_library[(i * col_count) + 4];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -119,6 +125,7 @@ export component MainView {
                 SongView {
                     song: media_library[(i * col_count) + 5];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -126,6 +133,7 @@ export component MainView {
                 SongView {
                     song: media_library[(i * col_count) + 6];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -133,6 +141,7 @@ export component MainView {
                 SongView {
                     song: media_library[(i * col_count) + 7];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -142,6 +151,7 @@ export component MainView {
                 SongView {
                     song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 0];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -149,6 +159,7 @@ export component MainView {
                 SongView {
                     song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 1];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -156,6 +167,7 @@ export component MainView {
                 SongView {
                     song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 2];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -163,6 +175,7 @@ export component MainView {
                 SongView {
                     song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 3];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -170,6 +183,7 @@ export component MainView {
                 SongView {
                     song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 4];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -177,6 +191,7 @@ export component MainView {
                 SongView {
                     song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 5];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }
@@ -184,6 +199,7 @@ export component MainView {
                 SongView {
                     song: media_library[(media_library.length - Math.mod(media_library.length, col_count)) + 6];
                     col_count: col_count;
+                    animation_tick: animation_tick;
 
                     play_song(song) => { play_song(song) }
                 }

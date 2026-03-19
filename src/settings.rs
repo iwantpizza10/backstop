@@ -1,10 +1,17 @@
 use std::{error::Error, fs, path::PathBuf};
-
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_binary::binary_stream::Endian;
-
 use crate::{cache::SortType, constants};
+use serde_repr::{Deserialize_repr, Serialize_repr};
+
+#[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug)]
+#[repr(u8)]
+pub enum RichPresenceType {
+    Blacklist,
+    Whitelist,
+    Disabled
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct BackstopSettings {
@@ -13,7 +20,9 @@ pub struct BackstopSettings {
     playback_speed: f32,
     cache_last_updated: DateTime<Utc>,
     media_directories: Vec<PathBuf>,
-    sort_type: SortType
+    sort_type: SortType,
+    discord_rich_presence_type: RichPresenceType,
+    rich_presence_list: Vec<String>
 }
 
 impl BackstopSettings {
@@ -24,7 +33,9 @@ impl BackstopSettings {
             playback_speed: 1.0,
             cache_last_updated: Utc::now(),
             media_directories: vec![],
-            sort_type: SortType::ArtistAlphabetical
+            sort_type: SortType::ArtistAlphabetical,
+            discord_rich_presence_type: RichPresenceType::Blacklist,
+            rich_presence_list: vec![]
         }
     }
 
@@ -119,5 +130,28 @@ impl BackstopSettings {
 
     pub fn set_sort_type(&mut self, sort: SortType) {
         self.sort_type = sort;
+    }
+
+    pub fn set_rich_presence_type(&mut self, presence: RichPresenceType) {
+        self.discord_rich_presence_type = presence;
+    }
+
+    pub fn rich_presence_type(&self) -> &RichPresenceType {
+        &self.discord_rich_presence_type
+    }
+
+    pub fn add_rich_presence_list(&mut self, text: String) {
+        self.rich_presence_list.push(text);
+    }
+
+    pub fn remove_rich_presence_list(&mut self, text: String) {
+        self.rich_presence_list = self.rich_presence_list.iter()
+            .filter(|x| **x != text)
+            .map(|x| x.clone())
+            .collect();
+    }
+
+    pub fn rich_presence_list(&self) -> &Vec<String> {
+        &self.rich_presence_list
     }
 }

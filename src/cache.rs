@@ -2,6 +2,7 @@ use std::{error::Error, ffi::OsStr, fs, io, path::{Path, PathBuf}, time::Duratio
 use audiotags::{MimeType, Tag};
 use serde::{Deserialize, Serialize};
 use serde_binary::binary_stream::Endian;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use uuid::Uuid;
 use futures_lite::stream::StreamExt;
 use crate::constants;
@@ -14,7 +15,8 @@ pub enum CacheState {
     Dead
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Serialize_repr, Deserialize_repr, Clone)]
+#[repr(u8)]
 pub enum SortType {
     TitleAlphabetical,
     ReverseTitleAlphabetical,

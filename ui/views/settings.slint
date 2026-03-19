@@ -1,127 +1,231 @@
-import { MenuState } from "../types.slint";
-import { Button, HorizontalBox, Slider } from "std-widgets.slint";
+import { MenuState, UIRichPresenceType } from "../types.slint";
+import { Button, HorizontalBox, Slider, ScrollView, ComboBox, LineEdit } from "std-widgets.slint";
 
 export component SettingsView {
     in-out property <MenuState> menustate;
+    in property <UIRichPresenceType> rpc_type;
     in property <[string]> media_directories;
+    in property <[string]> rpc_list;
     in property <color> button_disabled_color;
     in property <color> button_enabled_color;
     in property <float> playback_speed;
     callback remove_media_directory(string);
+    callback add_rpc_list_item(string);
+    callback remove_rpc_list_item(string);
+    callback set_rpc_type(UIRichPresenceType);
     callback set_playback_speed(float);
     callback add_media_directory();
     callback rescan_library();
 
     width: 1366px;
 
-    VerticalLayout {
-        spacing: 64px;
-        padding-bottom: 128px;
-
-        HorizontalLayout {
-            width: 100%;
-            alignment: center;
-
-            Image {
-                source: @image-url("../res/backstopfull.png");
-                width: 512px;
-                horizontal-alignment: center;
-            }
-        }
+    ScrollView {
+        width: 1366px;
+        height: 768px - 92px;
 
         VerticalLayout {
-            Text {
-                horizontal-alignment: center;
-                text: "Settings";
-                font-size: 48px;
-            }
+            spacing: 64px;
+            padding-bottom: 128px;
 
-            if media_directories.length > 0: HorizontalLayout {
+            HorizontalLayout {
                 width: 100%;
                 alignment: center;
-                padding-top: 64px;
 
-                VerticalLayout {
-                    padding: 8px;
-                    width: 60%;
-
-                    Text {
-                        text: "Media Directories";
-                        font-size: 24px;
-                        horizontal-alignment: center;
-                    }
-
-                    Text {
-                        text: "(click to remove one)\n";
-                        font-size: 20px;
-                        horizontal-alignment: center;
-                    }
-    
-                    for i in media_directories: Rectangle {
-                        height: 26px;
-                        background: button_disabled_color;
-
-                        TouchArea {
-                            x: 0;
-                            width: 100%;
-                            height: 26px;
-                            clicked => { remove_media_directory(i) }
-                        }
-
-                        Text {
-                            y: 4px;
-                            text: i;
-                            font-size: 18px;
-                            horizontal-alignment: left;
-                        }
-                    }
+                Image {
+                    source: @image-url("../res/backstopfull.png");
+                    height: 96px;
+                    horizontal-alignment: center;
                 }
             }
 
             VerticalLayout {
-                padding: 16px;
-
                 Text {
                     horizontal-alignment: center;
-                    text: "Playback Speed (\{Math.round(playback_speed * 100)}%)";
+                    text: "Settings";
+                    font-size: 48px;
+                }
+
+                if media_directories.length > 0: HorizontalLayout {
+                    width: 100%;
+                    alignment: center;
+                    padding-top: 64px;
+
+                    VerticalLayout {
+                        padding: 8px;
+                        width: 60%;
+
+                        Text {
+                            text: "Media Directories";
+                            font-size: 24px;
+                            horizontal-alignment: center;
+                        }
+
+                        Text {
+                            text: "(click to remove one)\n";
+                            font-size: 20px;
+                            horizontal-alignment: center;
+                        }
+        
+                        for i in media_directories: Rectangle {
+                            height: 26px;
+                            background: button_disabled_color;
+
+                            TouchArea {
+                                x: 0;
+                                width: 100%;
+                                height: 26px;
+                                clicked => { remove_media_directory(i) }
+                            }
+
+                            Text {
+                                y: 4px;
+                                text: i;
+                                font-size: 18px;
+                                horizontal-alignment: left;
+                            }
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    padding: 16px;
+
+                    Text {
+                        horizontal-alignment: center;
+                        text: "Playback Speed (\{Math.round(playback_speed * 100)}%)";
+                    }
+
+                    HorizontalLayout {
+                        alignment: center;
+
+                        Slider {
+                            maximum: 40;
+                            minimum: 1;
+                            value: playback_speed * 20;
+                            width: 384px;
+
+                            changed(value) => { set_playback_speed(Math.floor(value) / 20) };
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    width: 100%;
+                    alignment: center;
+
+                    VerticalLayout {
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: 32px;
+                            padding-bottom: 8px;
+
+                            Text {
+                                text: "Discord Rich Presence: ";
+                                vertical-alignment: center;
+                            }
+
+                            ComboBox {
+                                width: 192px;
+                                height: 32px;
+
+                                model: [ "Blacklist", "Whitelist", "Disabled" ];
+                                current-index: rpc_type == UIRichPresenceType.Blacklist ? 0 :
+                                    rpc_type == UIRichPresenceType.Whitelist ? 1 :
+                                    2;
+
+                                selected(current-value) => {
+                                    set_rpc_type(current-value == "Blacklist" ? UIRichPresenceType.Blacklist :
+                                        current-value == "Whitelist" ? UIRichPresenceType.Whitelist :
+                                        UIRichPresenceType.Disabled)
+                                }
+                            }
+                        }
+
+                        Text {
+                            text: "Rich Presence Artist Black/Whitelist";
+                            font-size: 24px;
+                            horizontal-alignment: center;
+                        }
+
+                        Text {
+                            text: "(click to remove one)\n";
+                            font-size: 20px;
+                            horizontal-alignment: center;
+                        }
+
+                        VerticalLayout {
+                            padding: 8px;
+                            padding-left: 273px;  // 1366px - (1366px * 0.6) = 820px
+                            padding-right: 273px; // 1366px - 820px = 546px / 2 = 273px
+                            width: 60%;
+
+                            for i in rpc_list: Rectangle {
+                                height: 26px;
+                                background: button_disabled_color;
+
+                                TouchArea {
+                                    x: 0;
+                                    width: 100%;
+                                    height: 26px;
+                                    clicked => { remove_rpc_list_item(i) }
+                                }
+
+                                Text {
+                                    y: 4px;
+                                    text: i;
+                                    font-size: 18px;
+                                    horizontal-alignment: left;
+                                }
+                            }
+                        }
+
+                        HorizontalLayout {
+                            width: 100%;
+                            alignment: center;
+                            padding-top: 8px;
+                            spacing: 8px;
+
+                            text := LineEdit {
+                                width: 256px;
+                                placeholder-text: "Artist name";
+                            }
+
+                            Button {
+                                width: 64px;
+                                text: "Add";
+
+                                clicked => {
+                                    add_rpc_list_item(text.text);
+                                    text.text = "";
+                                }
+                            }
+                        }
+                    }
                 }
 
                 HorizontalLayout {
                     alignment: center;
+                    padding-top: 64px;
+                    spacing: 16px;
 
-                    Slider {
-                        maximum: 40;
-                        minimum: 1;
-                        value: playback_speed * 20;
-                        width: 384px;
+                    Button {
+                        text: "Add a Media Directory";
 
-                        changed(value) => { set_playback_speed(Math.floor(value) / 20) };
+                        clicked => { add_media_directory() }
                     }
-                }
-            }
 
-            HorizontalLayout {
-                alignment: center;
-                padding-top: 64px;
-                spacing: 16px;
+                    Button {
+                        text: "Scan Library";
+                        
+                        clicked => { rescan_library() }
+                    }
 
-                Button {
-                    text: "Add a Media Directory";
+                    Button {
+                        text: "Close";
 
-                    clicked => { add_media_directory() }
-                }
-
-                Button {
-                    text: "Scan Library";
-                    
-                    clicked => { rescan_library() }
-                }
-
-                Button {
-                    text: "Close";
-
-                    clicked => {
-                        menustate = MenuState.Main
+                        clicked => {
+                            menustate = MenuState.Main
+                        }
                     }
                 }
             }

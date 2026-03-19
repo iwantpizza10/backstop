@@ -1,4 +1,4 @@
-import { MenuState, LibrarySong } from "./types.slint";
+import { MenuState, LibrarySong, UIRichPresenceType } from "./types.slint";
 import { Button } from "std-widgets.slint";
 import { FirstButtonsView } from "views/firstbuttons.slint";
 import { MainView } from "views/main.slint";
@@ -8,9 +8,11 @@ import { SettingsView } from "views/settings.slint";
 
 export component BackstopWindow inherits Window {
     in-out property <MenuState> menustate: Init;
+    in property <UIRichPresenceType> rpc_type;
     in property <[LibrarySong]> media_library;
     in property <LibrarySong> current_song;
     in property <[string]> media_directories;
+    in property <[string]> rpc_list;
     in property <float> volume;
     in property <float> playback_speed;
     in property <bool> playing: false;
@@ -20,6 +22,9 @@ export component BackstopWindow inherits Window {
     in property <int> song_position: 0;
     callback remove_media_directory(string);
     callback add_media_directory();
+    callback add_rpc_list_item(string);
+    callback remove_rpc_list_item(string);
+    callback set_rpc_type(UIRichPresenceType);
     callback rescan_library();
     callback pause();
     callback resume();
@@ -47,6 +52,7 @@ export component BackstopWindow inherits Window {
 
     if menustate == MenuState.Main: MainView {
         media_library: media_library;
+        animation_tick: animation-tick();
 
         play_song(a) => { play_song(a) }
     }
@@ -54,6 +60,8 @@ export component BackstopWindow inherits Window {
     if menustate == MenuState.Settings: SettingsView {
         menustate <=> menustate;
         media_directories: media_directories;
+        rpc_list: rpc_list;
+        rpc_type: rpc_type;
         button_disabled_color: #4b0fa3;
         button_enabled_color: #7221ea;
         playback_speed: playback_speed;
@@ -62,6 +70,9 @@ export component BackstopWindow inherits Window {
         remove_media_directory(a) => { remove_media_directory(a) }
         set_playback_speed(a) => { set_playback_speed(a) }
         rescan_library => { rescan_library() }
+        add_rpc_list_item(a) => { add_rpc_list_item(a) }
+        remove_rpc_list_item(a) => { remove_rpc_list_item(a) }
+        set_rpc_type(a) => { set_rpc_type(a) }
     }
 
     if menustate == MenuState.Reindexing || menustate == MenuState.AddingDir: TextView {

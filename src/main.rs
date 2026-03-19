@@ -1,13 +1,15 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{cell::RefCell, error::Error, fs::File, path::PathBuf, rc::Rc, time::Duration};
-use backstop::{cache::{self, CacheState, MediaCache, SongFileInfo}, constants, queue::SongsQueue, settings::BackstopSettings};
+use backstop::{cache::{self, CacheState, MediaCache, SongFileInfo}, constants, queue::SongsQueue, settings::{BackstopSettings, RichPresenceType}};
+use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity::{Activity, ActivityType, Assets, Button, StatusDisplayType}};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
 use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 use async_compat::Compat;
 
 const PLACEHOLDER_COVER: &[u8] = include_bytes!("../ui/res/cover_placeholder.png");
 const SECONGS_BACKSKIP_THRESHOLD: i32 = 5;
+const DISCORD_APP_ID: &str = "1483067786589765702";
 
 slint::include_modules!();
 
@@ -35,6 +37,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let media_dirs_model: Rc<VecModel<SharedString>> = Rc::new(VecModel::from(media_dirs_temp));
     let media_dirs_rc = ModelRc::from(media_dirs_model);
 
+    let rpc_list_temp = settings.borrow().rich_presence_list().iter()
+        .map(|x| x.into())
+        .collect::<Vec<SharedString>>();
+    let rpc_list_model: Rc<VecModel<SharedString>> = Rc::new(VecModel::from(rpc_list_temp));
+    let rpc_list_rc = ModelRc::from(rpc_list_model);
+
+    let rpc_client = Rc::new(RefCell::new(DiscordIpcClient::new(DISCORD_APP_ID)));
+
+    if *settings.borrow().rich_presence_type() != RichPresenceType::Disabled {
+        rpc_client.borrow_mut().connect()?;
+    }
+
     media_cache.borrow_mut().sort(settings.borrow().sort_type());
 
     if let Err(_) = load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone()) {
@@ -46,6 +60,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.set_menustate(if settings.borrow().is_first_launch() { MenuState::Onboarding } else { MenuState::Welcome });
     ui.set_media_library(media_cache_rc.clone());
     ui.set_media_directories(media_dirs_rc.clone());
+    ui.set_rpc_list(rpc_list_rc.clone());
+    ui.set_rpc_type(match settings.borrow().rich_presence_type() {
+        RichPresenceType::Blacklist => UIRichPresenceType::Blacklist,
+        RichPresenceType::Whitelist => UIRichPresenceType::Whitelist,
+        RichPresenceType::Disabled => UIRichPresenceType::Disabled,
+    });
     settings.borrow_mut().set_is_first_launch(false);
     let _ = settings.borrow().save_to_disk();
 
@@ -74,6 +94,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let audio_player = Rc::clone(&audio_player);
         let queue = Rc::clone(&songs_queue);
         let last_check = Rc::new(RefCell::new(Duration::ZERO));
+        let rpc_client = Rc::clone(&rpc_client);
+        let settings = Rc::clone(&settings);
 
         move || {
             ui.set_song_position(audio_player.get_pos().as_secs() as i32);
@@ -104,7 +126,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
 
                 if should_play {
-                    if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song)) {
+                    let song = library_paranormal_convert(&song);
+
+                    let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
+
+                    if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
                         ui.set_menustate(MenuState::PlaybackError);
                         ui.set_playing(false);
                     }
@@ -120,6 +146,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let audio_player = Rc::clone(&audio_player);
         let songs_queue = Rc::clone(&songs_queue);
         let media_cache = Rc::clone(&media_cache);
+        let rpc_client = Rc::clone(&rpc_client);
+        let settings = Rc::clone(&settings);
 
         move |song| {
             let mut songs_queue = songs_queue.borrow_mut();
@@ -128,6 +156,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .position(|x| *x.filepath == *song.path)
                 .expect("chose a song somehow that doesnt exit (???)") as i32;
             *songs_queue = SongsQueue::create_from_cache(&*media_cache.borrow(), cur_song_idx);
+
+            let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
 
             if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
                 ui.set_menustate(MenuState::PlaybackError);
@@ -251,7 +281,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         move |dir| {
             let dirs_rc = ui.get_media_directories();
             let media_dirs: &VecModel<SharedString> = dirs_rc.as_any().downcast_ref().expect("media_dirs_rc downcast should downcast properly");
-            let dirs: Vec<_> = media_dirs.iter().filter(|x| *x != dir).collect();
+            let dirs: Vec<_> = media_dirs.iter()
+                .filter(|x| *x != dir)
+                .collect();
             let mut settings = settings.borrow_mut();
 
             media_dirs.set_vec(dirs);
@@ -264,6 +296,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
         let queue = Rc::clone(&songs_queue);
+        let rpc_client = Rc::clone(&rpc_client);
+        let settings = Rc::clone(&settings);
 
         move || {
             let song;
@@ -283,7 +317,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             if should_play {
-                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song)) {
+                let song = library_paranormal_convert(&song);
+
+                let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
+
+                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
                     ui.set_menustate(MenuState::PlaybackError);
                     ui.set_playing(false);
                 }
@@ -295,6 +333,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
         let queue = Rc::clone(&songs_queue);
+        let rpc_client = Rc::clone(&rpc_client);
+        let settings = Rc::clone(&settings);
 
         move || {
             let song;
@@ -325,7 +365,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             if should_play {
-                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song)) {
+                let song = library_paranormal_convert(&song);
+
+                let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
+
+                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
                     ui.set_menustate(MenuState::PlaybackError);
                     ui.set_playing(false);
                 }
@@ -370,6 +414,54 @@ fn main() -> Result<(), Box<dyn Error>> {
             audio_player.set_speed(speed);
             ui.set_playback_speed(speed);
             let _ = settings.save_to_disk();
+        }
+    });
+
+    ui.on_add_rpc_list_item({
+        let ui = ui.as_weak().unwrap();
+        let settings = Rc::clone(&settings);
+
+        move |item| {
+            let list_rc = ui.get_rpc_list();
+            let rpc_list: &VecModel<SharedString> = list_rc.as_any().downcast_ref().expect("rpc_list_rc downcast should downcast properly");
+
+            settings.borrow_mut().add_rich_presence_list(item.to_string());
+            rpc_list.push(item);
+            let _ = settings.borrow().save_to_disk();
+        }
+    });
+
+    ui.on_remove_rpc_list_item({
+        let ui = ui.as_weak().unwrap();
+        let settings = Rc::clone(&settings);
+
+        move |item| {
+            let list_rc = ui.get_rpc_list();
+            let rpc_list: &VecModel<SharedString> = list_rc.as_any().downcast_ref().expect("rpc_list_rc downcast should downcast properly");
+            let items: Vec<_> = rpc_list.iter()
+                .filter(|x| *x != item)
+                .collect();
+            let mut settings = settings.borrow_mut();
+
+            rpc_list.set_vec(items);
+            settings.remove_rich_presence_list(item.to_string());
+            let _ = settings.save_to_disk();
+        }
+    });
+
+    ui.on_set_rpc_type({
+        let ui = ui.as_weak().unwrap();
+        let settings = Rc::clone(&settings);
+
+        move |rpc_type| {
+            ui.set_rpc_type(rpc_type);
+            settings.borrow_mut().set_rich_presence_type(match rpc_type {
+                UIRichPresenceType::Blacklist => RichPresenceType::Blacklist,
+                UIRichPresenceType::Whitelist => RichPresenceType::Whitelist,
+                UIRichPresenceType::Disabled => RichPresenceType::Disabled,
+            });
+
+            let _ = settings.borrow().save_to_disk();
         }
     });
 
@@ -439,6 +531,54 @@ fn play_song(audio_player: Rc<Player>, ui: BackstopWindow, song: LibrarySong) ->
     audio_player.clear();
     audio_player.append(source);
     audio_player.play();
+
+    Ok(())
+}
+
+fn set_discord_rpc(song: &LibrarySong, client: Rc<RefCell<DiscordIpcClient>>, settings: Rc<RefCell<BackstopSettings>>) -> Result<(), discord_rich_presence::error::Error> {
+    let settings = settings.borrow();
+    let list = settings.rich_presence_list();
+    let rpc_type = settings.rich_presence_type();
+    let mut can_set = false;
+
+    match rpc_type {
+        RichPresenceType::Blacklist => {
+            can_set = true;
+
+            for i in list {
+                println!("comparing {} and {}", song.artist.to_lowercase(), i.to_lowercase());
+                if song.artist.to_lowercase() == i.to_lowercase() {
+                    can_set = false;
+                }
+            }
+        },
+        RichPresenceType::Whitelist => {
+            for i in list {
+                if song.artist.to_lowercase() == i.to_lowercase() {
+                    can_set = true;
+                }
+            }
+        },
+        RichPresenceType::Disabled => {
+            can_set = false;
+        },
+    }
+
+    if can_set {
+        client.borrow_mut().set_activity(Activity::new()
+            .activity_type(ActivityType::Listening)
+            .name("Backstop")
+            .details(song.title.to_string())
+            .state(song.artist.to_string())
+            .status_display_type(StatusDisplayType::Details)
+            .buttons(vec![
+                Button::new("Get Backstop", "https://github.com/iwantpizza10/backstop")
+            ])
+            .assets(Assets::new().large_image("https://github.com/iwantpizza10/backstop/blob/main/ui/res/backstopshort_square.png?raw=true"))
+        )?;
+    } else {
+        client.borrow_mut().clear_activity()?;
+    }
 
     Ok(())
 }
