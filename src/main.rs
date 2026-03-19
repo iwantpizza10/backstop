@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         move || {
             ui.set_song_position(audio_player.get_pos().as_secs() as i32);
 
-            if queue.borrow().songs().len() != 0 && *last_check.borrow() == audio_player.get_pos() && !ui.get_paused() {
+            if queue.borrow().songs().len() != 0 && *last_check.borrow() == audio_player.get_pos() && !ui.get_paused() && ui.get_playing() {
                 let song;
                 let mut should_play = true;
                 let mut songs_queue = queue.borrow_mut();
@@ -106,6 +106,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if should_play {
                     if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song)) {
                         ui.set_menustate(MenuState::PlaybackError);
+                        ui.set_playing(false);
                     }
                 }
             }
@@ -130,6 +131,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
                 ui.set_menustate(MenuState::PlaybackError);
+                ui.set_playing(false);
             }
         }
     });
@@ -283,6 +285,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             if should_play {
                 if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song)) {
                     ui.set_menustate(MenuState::PlaybackError);
+                    ui.set_playing(false);
                 }
             }
         }
@@ -324,6 +327,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             if should_play {
                 if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song)) {
                     ui.set_menustate(MenuState::PlaybackError);
+                    ui.set_playing(false);
                 }
             }
         }
