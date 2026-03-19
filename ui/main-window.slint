@@ -68,7 +68,18 @@ export component BackstopWindow inherits Window {
         subtext: "Please wait a moment...";
     }
 
-    if menustate != MenuState.Reindexing && menustate != MenuState.AddingDir: FooterBar {
+    if menustate == MenuState.IndexingError || menustate == MenuState.LoadingError || menustate == MenuState.PlaybackError: TextView {
+        text: (menustate == MenuState.LoadingError ? "Loading" : 
+            menustate == MenuState.IndexingError ? "Indexing" :
+            "Playback") + " error!";
+        subtext: "Please try relaunching the app and/or checking disk permissions.";
+    }
+
+    if menustate != MenuState.Reindexing &&
+        menustate != MenuState.AddingDir &&
+        menustate != MenuState.IndexingError &&
+        menustate != MenuState.LoadingError &&
+        menustate != MenuState.PlaybackError: FooterBar {
         x: 0px;
         y: 768px - self.height;
         height: 96px;

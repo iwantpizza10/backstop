@@ -8,7 +8,7 @@ yes ik some of these are like backend stuff and not really something most people
 - sort stuff alphabetically (+reverse) by title
 - different views for finding songs/albums by specific artists and allat
 - a view where it just has all of the songs on one page cause i like that too
-- periodic (daily) & manually triggerable library rescanning
+- manually triggerable library rescanning
 - index of songs and their metadata ofc (title, artist, cover art, etc)
 
 ## how to contribute

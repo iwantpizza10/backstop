@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_binary::binary_stream::Endian;
 
-use crate::constants;
+use crate::{cache::SortType, constants};
 
 #[derive(Serialize, Deserialize)]
 pub struct BackstopSettings {
@@ -12,7 +12,8 @@ pub struct BackstopSettings {
     volume: f32,
     playback_speed: f32,
     cache_last_updated: DateTime<Utc>,
-    media_directories: Vec<PathBuf>
+    media_directories: Vec<PathBuf>,
+    sort_type: SortType
 }
 
 impl BackstopSettings {
@@ -22,7 +23,8 @@ impl BackstopSettings {
             volume: -0.0,
             playback_speed: 1.0,
             cache_last_updated: Utc::now(),
-            media_directories: vec![]
+            media_directories: vec![],
+            sort_type: SortType::ArtistAlphabetical
         }
     }
 
@@ -109,5 +111,13 @@ impl BackstopSettings {
             .filter(|x| **x != directory)
             .map(|x| x.clone())
             .collect();
+    }
+
+    pub fn sort_type(&self) -> SortType {
+        self.sort_type.clone()
+    }
+
+    pub fn set_sort_type(&mut self, sort: SortType) {
+        self.sort_type = sort;
     }
 }

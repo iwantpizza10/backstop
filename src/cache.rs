@@ -14,7 +14,7 @@ pub enum CacheState {
     Dead
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum SortType {
     TitleAlphabetical,
     ReverseTitleAlphabetical,

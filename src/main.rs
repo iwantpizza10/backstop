@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{cell::RefCell, error::Error, fs::File, path::PathBuf, rc::Rc, time::Duration};
-use backstop::{cache::{self, CacheState, MediaCache, SongFileInfo, SortType}, constants, queue::SongsQueue, settings::BackstopSettings};
+use backstop::{cache::{self, CacheState, MediaCache, SongFileInfo}, constants, queue::SongsQueue, settings::BackstopSettings};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
 use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 use async_compat::Compat;
@@ -27,27 +27,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let songs_queue = Rc::new(RefCell::new(SongsQueue::new()));
     
     audio_player.set_volume(settings.borrow().volume_linear());
+    audio_player.set_speed(settings.borrow().playback_speed());
 
     let media_dirs_temp = settings.borrow().media_directories().iter()
         .map(|x| x.to_string_lossy().to_string().into())
         .collect::<Vec<SharedString>>();
     let media_dirs_model: Rc<VecModel<SharedString>> = Rc::new(VecModel::from(media_dirs_temp));
     let media_dirs_rc = ModelRc::from(media_dirs_model);
-    
-    if media_cache.borrow().state() == &CacheState::Dead {
-        let media_cache = Rc::clone(&media_cache);
-        let settings = Rc::clone(&settings);
 
-        slint::spawn_local(Compat::new(async move {
-            // todo: a ui for if/when these fail
+    media_cache.borrow_mut().sort(settings.borrow().sort_type());
 
-            media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).await.unwrap();
-            media_cache.borrow().save_to_disk().unwrap();
-        })).unwrap();
+    if let Err(_) = load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone()) {
+        ui.set_menustate(MenuState::LoadingError);
     }
-
-    media_cache.borrow_mut().sort(SortType::TitleAlphabetical);
-    load_cache_to_model(&media_cache.borrow(), media_cache_rc.clone())?;
 
     ui.set_volume(settings.borrow().volume());
     ui.set_playback_speed(settings.borrow().playback_speed());
@@ -56,6 +48,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.set_media_directories(media_dirs_rc.clone());
     settings.borrow_mut().set_is_first_launch(false);
     let _ = settings.borrow().save_to_disk();
+
+    // keep this below the ui.set_menustate call so it'll override that if it needs to
+    if media_cache.borrow().state() == &CacheState::Dead {
+        let media_cache = Rc::clone(&media_cache);
+        let settings = Rc::clone(&settings);
+        let ui = ui.as_weak().unwrap();
+
+        slint::spawn_local(Compat::new(async move {
+            ui.set_menustate(MenuState::Reindexing);
+
+            if let Ok(_) = media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).await {
+                if let Err(_) = media_cache.borrow().save_to_disk() {
+                    ui.set_menustate(MenuState::IndexingError);
+                }
+            } else {
+                ui.set_menustate(MenuState::IndexingError);
+            }
+        })).unwrap();
+    }
 
     let ui_time_updater = Timer::default();
     ui_time_updater.start(TimerMode::Repeated, Duration::from_millis(250), {
@@ -93,7 +104,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
 
                 if should_play {
-                    play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+                    if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song)) {
+                        ui.set_menustate(MenuState::PlaybackError);
+                    }
                 }
             }
 
@@ -115,7 +128,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .expect("chose a song somehow that doesnt exit (???)") as i32;
             *songs_queue = SongsQueue::create_from_cache(&*media_cache.borrow(), cur_song_idx);
 
-            play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song);
+            if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
+                ui.set_menustate(MenuState::PlaybackError);
+            }
         }
     });
 
@@ -132,15 +147,29 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             slint::spawn_local(Compat::new(async move {
                 let original_menu_state = ui.get_menustate();
+                let mut media_cache = media_cache.borrow_mut();
 
                 ui.set_menustate(MenuState::Reindexing);
 
-                media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).await.unwrap();
-                media_cache.borrow().save_to_disk().unwrap();
+                if let Ok(_) = media_cache.rescan_library(settings.borrow().media_directories()).await {
+                    if let Err(_) = media_cache.save_to_disk() {
+                        ui.set_menustate(MenuState::IndexingError);
 
-                load_cache_to_model(&media_cache.borrow(), media_cache_rc).unwrap();
+                        return;
+                    }
+                } else {
+                    ui.set_menustate(MenuState::IndexingError);
 
-                ui.set_menustate(original_menu_state);
+                    return;
+                }
+
+                media_cache.sort(settings.borrow().sort_type());
+
+                if let Err(_) = load_cache_to_model(&media_cache, media_cache_rc) {
+                    ui.set_menustate(MenuState::LoadingError);
+                } else {
+                    ui.set_menustate(original_menu_state);
+                }
             })).unwrap();
         }
     });
@@ -204,7 +233,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                     media_dirs.push(dir_path.to_string_lossy().to_string().into());
                     settings.add_media_directory(dir_path);
-                    println!("{:?}", settings.save_to_disk());
 
                     ui.set_menustate(original_menu_state);
                 }
@@ -253,7 +281,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             if should_play {
-                play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song)) {
+                    ui.set_menustate(MenuState::PlaybackError);
+                }
             }
         }
     });
@@ -292,7 +322,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             if should_play {
-                play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song));
+                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), library_paranormal_convert(&song)) {
+                    ui.set_menustate(MenuState::PlaybackError);
+                }
             }
         }
     });
@@ -389,7 +421,7 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
     Ok(())
 }
 
-fn play_song(audio_player: Rc<Player>, ui: BackstopWindow, song: LibrarySong) {
+fn play_song(audio_player: Rc<Player>, ui: BackstopWindow, song: LibrarySong) -> Result<(), Box<dyn Error>> {
     let song_path = song.path.clone();
 
     ui.set_current_song(song);
@@ -397,12 +429,14 @@ fn play_song(audio_player: Rc<Player>, ui: BackstopWindow, song: LibrarySong) {
     ui.set_paused(false);
     ui.set_song_position(0);
 
-    let file = File::open(song_path).unwrap();
-    let source = Decoder::try_from(file).unwrap();
+    let file = File::open(song_path)?;
+    let source = Decoder::try_from(file)?;
 
     audio_player.clear();
     audio_player.append(source);
     audio_player.play();
+
+    Ok(())
 }
 
 // fn library_normal_convert(song: LibrarySong) -> SongFileInfo {
