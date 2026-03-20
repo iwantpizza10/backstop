@@ -77,9 +77,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         slint::spawn_local(Compat::new(async move {
             ui.set_menustate(MenuState::Reindexing);
+            let mut media_cache = media_cache.borrow_mut();
 
-            if let Ok(_) = media_cache.borrow_mut().rescan_library(settings.borrow().media_directories()).await {
-                if let Err(_) = media_cache.borrow().save_to_disk() {
+            if let Ok(_) = media_cache.rescan_library(settings.borrow().media_directories()).await {
+                if let Err(_) = media_cache.save_to_disk() {
                     ui.set_menustate(MenuState::IndexingError);
                 }
             } else {
