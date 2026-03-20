@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let rpc_client = Rc::new(RefCell::new(DiscordIpcClient::new(DISCORD_APP_ID)));
 
     if *settings.borrow().rich_presence_type() != RichPresenceType::Disabled {
-        rpc_client.borrow_mut().connect()?;
+        let _ = rpc_client.borrow_mut().connect();
     }
 
     media_cache.borrow_mut().sort(settings.borrow().sort_type());
@@ -469,10 +469,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let _ = settings.borrow().save_to_disk();
 
             if rpc_type != UIRichPresenceType::Disabled {
-                if let Err(_) = rpc_client.borrow_mut().connect() {
-                    ui.set_menustate(MenuState::LoadingError);
-                    ui.set_playing(false);
-                }
+                let _ = rpc_client.borrow_mut().connect();
             }
         }
     });
