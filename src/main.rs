@@ -273,6 +273,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                     media_dirs.push(dir_path.to_string_lossy().to_string().into());
                     settings.add_media_directory(dir_path);
+                    let _ = settings.save_to_disk();
 
                     ui.set_menustate(original_menu_state);
                 }

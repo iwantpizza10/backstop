@@ -33,10 +33,10 @@ component SongView {
                 width: card_width;
                 vertical-scrollbar-policy: always-off;
                 horizontal-scrollbar-policy: always-off;
-                property <int> max_x_range: (card_width + 4px + text.width) / 1px;
+                property <int> max_x_range: (card_width + 4px + title_text.width) / 1px;
                 property <int> tick_number: animation_tick / (1s / 60);
     
-                text := Text {
+                title_text := Text {
                     x: Math.floor(self.width / 1px) >= Math.floor(card_width / 1px) ?
                         (Math.mod(tick_number, max_x_range) * -1px) + (card_width) + 4px
                         : 0px;
@@ -46,14 +46,41 @@ component SongView {
             }
 
             VerticalLayout {
-                if !song.album.is-empty: Text {
-                    text: song.track-number != -1 ? "\{song.album} #\{song.track-number}" : "\{song.album}";
-                    font-size: 12px;
+                if !song.album.is-empty: ScrollView {
+                    height: 12px;
+                    width: card_width;
+                    vertical-scrollbar-policy: always-off;
+                    horizontal-scrollbar-policy: always-off;
+                    property <int> max_x_range: (card_width + 4px + album_text.width) / 1px;
+                    property <int> tick_number: animation_tick / (1s / 60);
+
+                    album_text := Text {
+
+                        x: Math.floor(self.width / 1px) >= Math.floor(card_width / 1px) ?
+                            (Math.mod(tick_number, max_x_range) * -1px) + (card_width) + 4px
+                            : 0px;
+
+                        text: song.track-number != -1 ? "\{song.album} #\{song.track-number}" : "\{song.album}";
+                        font-size: 12px;
+                    }
                 }
 
-                Text {
-                    text: "\{song.artist}";
-                    font-size: 12px;
+                ScrollView {
+                    height: 12px;
+                    width: card_width;
+                    vertical-scrollbar-policy: always-off;
+                    horizontal-scrollbar-policy: always-off;
+                    property <int> max_x_range: (card_width + 4px + artist_text.width) / 1px;
+                    property <int> tick_number: animation_tick / (1s / 60);
+
+                    artist_text := Text {
+                        x: Math.floor(self.width / 1px) >= Math.floor(card_width / 1px) ?
+                            (Math.mod(tick_number, max_x_range) * -1px) + (card_width) + 4px
+                            : 0px;
+
+                        text: "\{song.artist}";
+                        font-size: 12px;
+                    }
                 }
             }
         }
