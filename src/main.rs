@@ -2,7 +2,8 @@
 
 use std::{cell::RefCell, error::Error, fs::File, path::PathBuf, rc::Rc, time::Duration};
 use backstop::{cache::{self, CacheState, MediaCache, SongFileInfo}, constants, queue::SongsQueue, settings::{BackstopSettings, RichPresenceType}};
-use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity::{Activity, ActivityType, Assets, Button, StatusDisplayType}};
+use chrono::Utc;
+use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity::{Activity, ActivityType, Assets, Button, StatusDisplayType, Timestamps}};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
 use slint::{Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 use async_compat::Compat;
@@ -583,6 +584,8 @@ fn set_discord_rpc(song: &LibrarySong, client: Rc<RefCell<DiscordIpcClient>>, se
             .details(song.title.to_string())
             .state(song.artist.to_string())
             .status_display_type(StatusDisplayType::Details)
+            .timestamps(Timestamps::new()
+                .start(Utc::now().timestamp()))
             .buttons(vec![
                 Button::new("Get Backstop", "https://github.com/iwantpizza10/backstop")
             ])
