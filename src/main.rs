@@ -82,6 +82,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             if let Ok(_) = media_cache.rescan_library(settings.borrow().media_directories()).await {
                 if let Err(_) = media_cache.save_to_disk() {
                     ui.set_menustate(MenuState::IndexingError);
+                } else {
+                    ui.set_menustate(if settings.borrow().is_first_launch() { MenuState::Onboarding } else { MenuState::Welcome });
                 }
             } else {
                 ui.set_menustate(MenuState::IndexingError);
