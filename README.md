@@ -1,15 +1,27 @@
-# backstop
-a desktop music player built w/ slint and rust that does what i want from a music player
+# Backstop
+A desktop music player built w/ Slint & Rust that does what I want from a music player.
 
-## features (planned at least)
-yes ik some of these are like backend stuff and not really something most people would want to read its fine lmao
+## Getting Started
+To get started with Backstop, simply add a media folder, index the library, and you're good to go! If songs names or artists show up as `?` (or if the coverart shows as a placeholder), please make sure your songs have metadata before submitting an issue.
+<!-- Backstop currently supports the following formats:
+- mp3
+- ogg
+- flac
+- m4a
+- aac
+- wav
+- opus -->
 
-- custom media directory list
-- sort stuff alphabetically (+reverse) by title
-- different views for finding songs/albums by specific artists and allat
-- a view where it just has all of the songs on one page cause i like that too
-- manually triggerable library rescanning
-- index of songs and their metadata ofc (title, artist, cover art, etc)
+## Features
+- Fully custom media directory list
+- Alphabetically sorted by artist
+<!-- - different views for finding songs/albums by specific artists and allat -->
+- Library scanning & caching
+- Song titles, artists, etc found via song file's metadata
 
-## how to contribute
-contributions are welcome! just submit a pr and i'll go over it i suppose
+## Planned features
+- The ability to change sorting orders
+- Menu that lets you select songs only by one artist or album
+
+## Contribution
+Contributions are welcome! Just submit a PR and I'll go over it.

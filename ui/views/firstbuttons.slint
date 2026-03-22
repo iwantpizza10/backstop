@@ -55,11 +55,27 @@ export component FirstButtonsView {
                 }
 
                 Button {
-                    text: "Close";
+                    text: "Browse Library";
 
                     clicked => {
                         menustate = MenuState.Main
                     }
+                }
+            }
+
+            HorizontalLayout {
+                alignment: center;
+                padding-top: 16px;
+
+                Text {
+                    text: "These steps are linear; you must first add a directory that contains " +
+                        "mp3/flac/wav/other audio files that have metadata, then scan the library, " +
+                        "and finally browse your library to play songs.";
+                    color: #555;
+                    font-size: 14px;
+                    horizontal-alignment: center;
+                    width: 512px;
+                    wrap: TextWrap.word-wrap;
                 }
             }
         }
