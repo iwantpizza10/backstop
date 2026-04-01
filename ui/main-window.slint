@@ -22,6 +22,7 @@ export component BackstopWindow inherits Window {
     in property <bool> paused: false;
     in property <bool> repeat: false;
     in property <int> song_position: 0;
+    property <bool> peek;
     callback remove_media_directory(string);
     callback add_media_directory();
     callback add_rpc_list_item(string);
@@ -34,12 +35,9 @@ export component BackstopWindow inherits Window {
     callback skip_backward();
     callback skip_forward();
     callback toggle_repeat();
-    // callback peek_next();
     callback set_volume(float);
     callback set_playback_speed(float);
     callback play_song(LibrarySong);
-
-    property <bool> peek;
 
     title: "Backstop";
     icon: @image-url("./res/backstopshort_square.png");
@@ -137,11 +135,17 @@ export component BackstopWindow inherits Window {
         height: 192px;
 
         background: #170f37;
+        border-radius: 15px;
+        border-color: white;
+        border-width: 2px;
+        clip: true;
 
         HorizontalLayout {
             alignment: center;
 
             VerticalLayout {
+                padding-left: 32px;
+                padding-right: 32px;
                 alignment: center;
                 spacing: 4px;
 
@@ -154,6 +158,7 @@ export component BackstopWindow inherits Window {
                 for i in 3: Text {
                     text: next_three[i];
                     horizontal-alignment: center;
+                    wrap: TextWrap.word-wrap;
                 }
             }
         }

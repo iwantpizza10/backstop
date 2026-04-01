@@ -161,6 +161,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             if ui.get_shuffle() {
                 queue.borrow_mut().shuffle();
+
+                let next_3_vec = queue.borrow().next_3().iter()
+                    .map(|x| x.into())
+                    .collect::<Vec<_>>();
+
+                ui.set_next_three(ModelRc::from(Rc::new(VecModel::from(next_3_vec))));
             }
 
             let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
@@ -399,6 +405,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                 queue.shuffle();
                 ui.set_shuffle(true);
             }
+
+            let next_3_vec = queue.next_3().iter()
+                .map(|x| x.into())
+                .collect::<Vec<_>>();
+
+            ui.set_next_three(ModelRc::from(Rc::new(VecModel::from(next_3_vec))));
         }
     });
 
