@@ -5,6 +5,7 @@ import { MainView } from "views/main.slint";
 import { TextView } from "views/text.slint";
 import { FooterBar } from "footer.slint";
 import { SettingsView } from "views/settings.slint";
+import { CoverArtView } from "views/coverart.slint";
 
 export component BackstopWindow inherits Window {
     in-out property <MenuState> menustate: Init;
@@ -85,6 +86,11 @@ export component BackstopWindow inherits Window {
             menustate == MenuState.IndexingError ? "Indexing" :
             "Playback") + " error!";
         subtext: "Please try relaunching the app and/or checking disk permissions.";
+    }
+
+    if menustate == MenuState.CoverArt: CoverArtView {
+        menustate <=> menustate;
+        current_song: current_song;
     }
 
     if menustate != MenuState.Reindexing &&

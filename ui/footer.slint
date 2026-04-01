@@ -80,6 +80,13 @@ export component FooterBar {
                 width: 88px; // from 96px header width - 8px
                 clip: true;
 
+                TouchArea {
+                    width: 88px;
+                    height: 88px;
+
+                    clicked => { menustate = MenuState.CoverArt }
+                }
+
                 Image {
                     width: 88px;
                     height: self.width;

@@ -235,7 +235,7 @@ async fn scan_info(path: PathBuf) -> Result<SongFileInfo, Box<dyn Error>> {
         });
 
         let image = image::load_from_memory(cover.data)?
-            .thumbnail_exact(256, 256);
+            .thumbnail_exact(300, 300);
 
         image.save(&cover_location)?;
     } else {

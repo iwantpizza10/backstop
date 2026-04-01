@@ -1,0 +1,63 @@
+import { MenuState, LibrarySong } from "../types.slint";
+import { Button, HorizontalBox } from "std-widgets.slint";
+
+export component CoverArtView {
+    in-out property <MenuState> menustate;
+    in property <LibrarySong> current_song;
+
+    width: 1366px;
+
+    VerticalLayout {
+        spacing: 32px;
+        padding-bottom: 128px;
+
+        HorizontalLayout {
+            width: 100%;
+            alignment: center;
+
+            Rectangle {
+                border-radius: 10px;
+                width: 300px;
+                clip: true;
+
+                Image {
+                    width: 300px;
+                    height: self.width;
+                    source: current_song.cover;
+                }
+            }
+        }
+
+        VerticalLayout {
+            Text {
+                horizontal-alignment: center;
+                text: current_song.title;
+                font-size: 48px;
+            }
+
+            if !current_song.album.is-empty: Text {
+                text: current_song.track-number != -1 ? "\{current_song.album} #\{current_song.track-number}" : "\{current_song.album}";
+                horizontal-alignment: center;
+                font-size: 24px;
+            }
+
+            Text {
+                text: current_song.artist;
+                horizontal-alignment: center;
+                font-size: 24px;
+            }
+
+            HorizontalLayout {
+                alignment: center;
+                padding-top: 64px;
+                spacing: 16px;
+
+                Button {
+                    text: "Back";
+
+                    clicked => { menustate = MenuState.Main }
+                }
+            }
+        }
+    }
+}
