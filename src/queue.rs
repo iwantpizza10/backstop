@@ -106,4 +106,18 @@ impl SongsQueue {
     pub fn position(&self) -> usize {
         self.position
     }
+
+    pub fn next_3(&self) -> Vec<String> {
+        let gen_str = |sog: Option<&SongFileInfo>| if let Some(sog) = sog {
+            format!("{} - {}", sog.artist.clone(), sog.title.clone())
+        } else {
+            String::new()
+        };
+
+        vec![
+            gen_str(self.songs.get(self.position + 1)),
+            gen_str(self.songs.get(self.position + 2)),
+            gen_str(self.songs.get(self.position + 3))
+        ]
+    }
 }

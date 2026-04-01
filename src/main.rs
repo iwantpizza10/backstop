@@ -134,7 +134,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                     let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
 
-                    if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
+                    if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song, songs_queue.next_3()) {
                         ui.set_menustate(MenuState::PlaybackError);
                         ui.set_playing(false);
                     }
@@ -148,26 +148,24 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.on_play_song({
         let ui = ui.as_weak().unwrap();
         let audio_player = Rc::clone(&audio_player);
-        let songs_queue = Rc::clone(&songs_queue);
+        let queue = Rc::clone(&songs_queue);
         let media_cache = Rc::clone(&media_cache);
         let rpc_client = Rc::clone(&rpc_client);
         let settings = Rc::clone(&settings);
 
         move |song| {
-            let mut songs_queue = songs_queue.borrow_mut();
-
             let cur_song_idx = media_cache.borrow().songs().iter()
                 .position(|x| *x.filepath == *song.path)
                 .expect("chose a song somehow that doesnt exit (???)") as i32;
-            *songs_queue = SongsQueue::create_from_cache(&*media_cache.borrow(), cur_song_idx);
+            *queue.borrow_mut() = SongsQueue::create_from_cache(&*media_cache.borrow(), cur_song_idx);
 
             if ui.get_shuffle() {
-                songs_queue.shuffle();
+                queue.borrow_mut().shuffle();
             }
 
             let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
 
-            if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
+            if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song, queue.borrow().next_3()) {
                 ui.set_menustate(MenuState::PlaybackError);
                 ui.set_playing(false);
             }
@@ -331,7 +329,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
 
-                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
+                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song, songs_queue.next_3()) {
                     ui.set_menustate(MenuState::PlaybackError);
                     ui.set_playing(false);
                 }
@@ -379,7 +377,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 let _ = set_discord_rpc(&song, Rc::clone(&rpc_client), Rc::clone(&settings));
 
-                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song) {
+                if let Err(_) = play_song(Rc::clone(&audio_player), ui.as_weak().unwrap(), song, queue.borrow().next_3()) {
                     ui.set_menustate(MenuState::PlaybackError);
                     ui.set_playing(false);
                 }
@@ -531,13 +529,17 @@ fn load_cache_to_model(media_cache: &MediaCache, media_cache_rc: ModelRc<Library
     Ok(())
 }
 
-fn play_song(audio_player: Rc<Player>, ui: BackstopWindow, song: LibrarySong) -> Result<(), Box<dyn Error>> {
+fn play_song(audio_player: Rc<Player>, ui: BackstopWindow, song: LibrarySong, next_3_vec: Vec<String>) -> Result<(), Box<dyn Error>> {
     let song_path = song.path.clone();
+    let next_3_vec = next_3_vec.iter()
+        .map(|x| x.into())
+        .collect::<Vec<_>>();
 
     ui.set_current_song(song);
     ui.set_playing(true);
     ui.set_paused(false);
     ui.set_song_position(0);
+    ui.set_next_three(ModelRc::from(Rc::new(VecModel::from(next_3_vec))));
 
     let file = File::open(song_path)?;
     let source = Decoder::try_from(file)?;

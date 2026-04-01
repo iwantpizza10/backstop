@@ -13,6 +13,7 @@ export component BackstopWindow inherits Window {
     in property <[LibrarySong]> media_library;
     in property <LibrarySong> current_song;
     in property <[string]> media_directories;
+    in property <[string]> next_three;
     in property <[string]> rpc_list;
     in property <float> volume;
     in property <float> playback_speed;
@@ -33,9 +34,12 @@ export component BackstopWindow inherits Window {
     callback skip_backward();
     callback skip_forward();
     callback toggle_repeat();
+    // callback peek_next();
     callback set_volume(float);
     callback set_playback_speed(float);
     callback play_song(LibrarySong);
+
+    property <bool> peek;
 
     title: "Backstop";
     icon: @image-url("./res/backstopshort_square.png");
@@ -114,6 +118,7 @@ export component BackstopWindow inherits Window {
         repeat: repeat;
         song_position: song_position;
         playback_speed: playback_speed;
+        peek: peek;
 
         set_volume(a) => { set_volume(a) }
         toggle_shuffle => { toggle_shuffle() }
@@ -122,5 +127,35 @@ export component BackstopWindow inherits Window {
         skip_forward => { skip_forward() }
         resume => { resume() }
         pause => { pause() }
+        toggle_peek => { peek = !peek }
+    }
+
+    if peek: Rectangle {
+        x: (1366px - self.width) / 2;
+        y: (768px - self.height) / 2;
+        width: 384px;
+        height: 192px;
+
+        background: #170f37;
+
+        HorizontalLayout {
+            alignment: center;
+
+            VerticalLayout {
+                alignment: center;
+                spacing: 4px;
+
+                Text {
+                    text: "Next 3 Songs:\n";
+                    font-size: 24px;
+                    horizontal-alignment: center;
+                }
+
+                for i in 3: Text {
+                    text: next_three[i];
+                    horizontal-alignment: center;
+                }
+            }
+        }
     }
 }
