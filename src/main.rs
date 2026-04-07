@@ -472,6 +472,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.on_set_rpc_type({
         let ui = ui.as_weak().unwrap();
         let settings = Rc::clone(&settings);
+        let rpc_client = Rc::clone(&rpc_client);
 
         move |rpc_type| {
             ui.set_rpc_type(rpc_type);
@@ -486,6 +487,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             if rpc_type != UIRichPresenceType::Disabled {
                 let _ = rpc_client.borrow_mut().connect();
             }
+        }
+    });
+
+    ui.on_clear_rpc({
+        let rpc_client = Rc::clone(&rpc_client);
+
+        move || {
+            let _ = rpc_client.borrow_mut().clear_activity();
         }
     });
 

@@ -29,6 +29,7 @@ export component BackstopWindow inherits Window {
     callback remove_rpc_list_item(string);
     callback set_rpc_type(UIRichPresenceType);
     callback rescan_library();
+    callback clear_rpc();
     callback pause();
     callback resume();
     callback toggle_shuffle();
@@ -123,6 +124,7 @@ export component BackstopWindow inherits Window {
         toggle_repeat => { toggle_repeat() }
         skip_backward => { skip_backward() }
         skip_forward => { skip_forward() }
+        clear_rpc => { clear_rpc() }
         resume => { resume() }
         pause => { pause() }
         toggle_peek => { peek = !peek }

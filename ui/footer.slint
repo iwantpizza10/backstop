@@ -36,6 +36,7 @@ export component FooterBar {
     callback skip_backward();
     callback skip_forward();
     callback toggle_peek();
+    callback clear_rpc();
     callback resume();
     callback pause();
     in-out property <MenuState> menustate;
@@ -153,7 +154,15 @@ export component FooterBar {
             }
 
             HorizontalLayout {
-                spacing: -160px;
+                spacing: -120px;
+
+                FooterButton {
+                    icon: IconSet.Eraser;
+                    color: #ffffff;
+                    bg_color: button_enabled_color;
+
+                    clicked => { clear_rpc() }
+                }
 
                 FooterButton {
                     icon: IconSet.Shuffle;
