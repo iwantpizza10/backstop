@@ -1,17 +1,26 @@
-use std::{fs::File, rc::Rc, time::Duration};
+use std::{fmt::Debug, fs::File, rc::Rc, sync::Arc, time::Duration};
 use chrono::{DateTime, Utc};
-use rodio::{Decoder, DeviceSinkBuilder, DeviceSinkError};
+use rodio::{Decoder, DeviceSinkBuilder, DeviceSinkError, MixerDeviceSink, Source};
 
 use crate::{BackstopError, saved_state::song_file_info::SongFileInfo};
 
+#[derive(Debug, Clone)]
 pub struct CurrentSong {
     pub duration: Duration,
     pub start_time: DateTime<Utc>,
-    pub file_info: Rc<SongFileInfo>,
+    pub file_info: Arc<SongFileInfo>,
 }
 
 pub struct Player {
     pub audio_player: Rc<rodio::Player>,
+    device: Rc<MixerDeviceSink>,
+    current_duration: Option<Duration>,
+}
+
+impl Debug for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<player>")
+    }
 }
 
 impl Player {
@@ -22,6 +31,8 @@ impl Player {
 
         let instance = Self {
             audio_player: Rc::new(rodio::Player::connect_new(&device.mixer())),
+            device: Rc::new(device),
+            current_duration: None,
         };
 
         instance.set_speed(speed);
@@ -31,7 +42,7 @@ impl Player {
     }
 
     /// plays a song!
-    pub fn play_song(&mut self, song: Rc<SongFileInfo>) -> Result<(), BackstopError> {
+    pub fn play_song(&mut self, song: Arc<SongFileInfo>) -> Result<(), BackstopError> {
         let file = File::open(&song.path);
 
         let file = if let Ok(file) = file {
@@ -48,9 +59,11 @@ impl Player {
             return Err(BackstopError::PlaybackError);
         };
 
+        self.current_duration = source.total_duration();
         self.audio_player.clear();
         self.audio_player.append(source);
         self.audio_player.play();
+        println!("should be playing");
 
         Ok(())
     }
@@ -58,6 +71,11 @@ impl Player {
     /// gets position of the currently playing song
     pub fn get_pos(&self) -> Duration {
         self.audio_player.get_pos()
+    }
+
+    /// gets duration of current song
+    pub fn get_duration(&self) -> Duration {
+        self.current_duration.unwrap_or(Duration::ZERO)
     }
 
     /// pauses playing song

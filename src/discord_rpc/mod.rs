@@ -11,12 +11,14 @@ use crate::saved_state::settings::BackstopSettings;
 
 #[derive(Clone, Default, Serialize, Deserialize, Debug, Copy, PartialEq)]
 pub enum DiscordRpcMode {
-    #[default]
+    // todo: change default back to blacklist
     Blacklist,
     Whitelist,
+    #[default]
     Disabled,
 }
 
+#[derive(Debug)]
 pub struct DiscordRpc {
     rpc_mode_mirror: DiscordRpcMode,
     rpc_list_mirror: Vec<String>,
@@ -29,8 +31,8 @@ pub struct DiscordRpc {
 
 impl DiscordRpc {
     /// creates a new DiscordRpc instance
-    pub fn new(settings: BackstopSettings, playing_state: PlayingState) -> Self {
-        Self {
+    pub fn new(settings: &BackstopSettings, playing_state: PlayingState) -> Result<Self, Error> {
+        Ok(Self {
             rpc_mode_mirror: settings.get_rpc_mode(),
             rpc_list_mirror: settings.get_rpc_list().iter().map(|x| (*x).clone()).collect(),
             current_song_title: None,
@@ -38,9 +40,12 @@ impl DiscordRpc {
             song_start_time: None,
             playing_state: playing_state,
             rpc_client: if settings.get_rpc_mode() != DiscordRpcMode::Disabled {
-                    Some(DiscordIpcClient::new(DISCORD_APP_ID))
+                    let mut client = DiscordIpcClient::new(DISCORD_APP_ID);
+                    client.connect()?;
+
+                    Some(client)
                 } else { None },
-        }
+        })
     }
 
     /// updates the rpc_mode, handles connecting/disconnecting as needed
@@ -74,7 +79,7 @@ impl DiscordRpc {
         self.song_start_time = Some(song.start_time);
         self.playing_state = PlayingState::Playing;
 
-        let _ = self.rpc();
+        let _ = self.rpc().unwrap();
     }
 
     /// clears discord rpc

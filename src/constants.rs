@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 
-pub const BACKSTOP_PAUSE_ICON_URL: &str = ""; // todo: pause icon
-pub const BACKSTOP_LOGO_URL: &str = "https://github.com/iwantpizza10/backstop/blob/main/ui/res/backstopshort_square.png?raw=true";
-pub const BACKSTOP_REPO_URL: &str = "https://github.com/iwantpizza10/backstop";
+pub const BACKSTOP_LOGO: &[u8] = include_bytes!("../assets/backstopfull.png");
+
+pub const BACKSTOP_PAUSE_ICON_URL: &str = "https://github.com/iwantpizza10/backstop/blob/main/assets/pause.png?raw=true";
+pub const BACKSTOP_LOGO_URL: &str = "https://github.com/iwantpizza10/backstop/blob/main/assets/backstopshort_square.png?raw=true";
+pub const BACKSTOP_REPO_URL: &str = "https://github.com/iwantpizza10/backstop/releases";
 pub const DISCORD_APP_ID: &str = "1483067786589765702";
 pub const MUSIC_EXTS: [&str; 7] = [
     "mp3", "ogg", "flac", "m4a",

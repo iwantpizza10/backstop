@@ -1,3 +1,4 @@
+use std::io::ErrorKind;
 use std::{collections::HashSet, error::Error, fs, path::PathBuf};
 use chrono::{DateTime, Utc};
 use iced::time;
@@ -31,19 +32,34 @@ impl BackstopSettings {
         let mut path = constants::conf_dir();
         path.push("settings_temp.bin"); // todo: untemp
 
-        let file = fs::read(path)?;
-        
-        Ok(serde_binary::from_vec::<BackstopSettings>(file, Endian::Little)?)
+        let file = fs::read(path);
+
+        match file {
+            Ok(file) => {
+                let mut settings = serde_binary::from_vec::<BackstopSettings>(file, Endian::Little)?;
+
+                // todo: uncomment this
+                // settings.first_launch = false;
+
+                Ok(settings)
+            },
+            Err(err) => {
+                if err.kind() == ErrorKind::NotFound {
+                    Ok(Self::default())
+                } else {
+                    Err(Box::new(err))
+                }
+            }
+        }
     }
 
-    /// saves settings to disk. SHOULD happen automatically
-    /// upon changing a property, but this function is here just in case?
+    /// saves settings to disk
     /// 
     /// returns:
     /// * Ok(()) if it saved w/o issue
     /// * `Err<serde_binary::Error>` if it cant serialize
     /// * `Err<std::io::Error>` if io error
-    pub async fn save(&self) -> Result<(), Box<dyn Error>> {
+    pub async fn save(&mut self) -> Result<(), Box<dyn Error>> {
         let mut path = constants::conf_dir();
         path.push("settings_temp.bin"); // todo: untemp
 
@@ -65,7 +81,6 @@ impl BackstopSettings {
     /// toggles the shuffle state, then returns the new state
     pub fn toggle_shuffle(&mut self) -> bool {
         self.shuffle = !self.shuffle;
-
         self.shuffle
     }
 
@@ -77,7 +92,6 @@ impl BackstopSettings {
     /// toggles the repeat state, then returns the new state
     pub fn toggle_repeat(&mut self) -> bool {
         self.repeat = !self.repeat;
-
         self.repeat
     }
 
@@ -125,8 +139,8 @@ impl BackstopSettings {
     }
 
     /// returns a vector of media directories to index
-    pub fn get_media_directories(&self) -> Vec<&PathBuf> {
-        self.media_directories.iter().collect()
+    pub fn get_media_directories(&self) -> Vec<PathBuf> {
+        self.media_directories.iter().map(PathBuf::clone).collect()
     }
 
     /// adds a media directory to the index list

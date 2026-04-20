@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::io::ErrorKind;
 use std::sync::Arc;
 use std::{error::Error, ffi::OsStr, fs, io, path::PathBuf};
 use audiotags::{AudioTag, MimeType, Tag};
@@ -77,10 +78,22 @@ impl MediaCache {
         let mut path = constants::conf_dir();
         path.push("media_cache_temp.bin"); // todo: untemp
 
-        let file = fs::read(path)?;
-        let cache = serde_binary::from_vec::<HashSet<Arc<SongFileInfo>>>(file, Endian::Little)?;
+        let file = fs::read(path);
 
-        Ok(MediaCache::from(cache))
+        match file {
+            Ok(file) => {
+                let cache = serde_binary::from_vec::<HashSet<Arc<SongFileInfo>>>(file, Endian::Little)?;
+
+                Ok(MediaCache::from(cache))
+            },
+            Err(err) => {
+                if err.kind() == ErrorKind::NotFound {
+                    Ok(Self::default())
+                } else {
+                    Err(Box::new(err))
+                }
+            }
+        }
     }
 
     /// saves media cache to disk
@@ -155,13 +168,17 @@ impl MediaCache {
         }
     }
 
-    /// rescans the library from the specified directories
-    pub async fn rescan_library(&mut self, dirs: &[PathBuf]) -> Result<(), io::Error> {
+    /// creates a new MediaCache by scanning the privided directories
+    pub async fn from_scan(dirs: Vec<PathBuf>) -> Result<Self, io::Error> {
         let mut files_list: Vec<PathBuf> = vec![];
         let mut song_metadata: HashSet<Arc<SongFileInfo>> = HashSet::new();
+        let mut instance = Self::from(HashSet::new());
+
+        // todo: uncomment
+        // clear_covers_cache()?;
 
         for dir in dirs {
-            let mut files = scan_dir(dir).await?;
+            let mut files = scan_dir(&dir).await?;
 
             files_list.append(&mut files);
         }
@@ -174,12 +191,12 @@ impl MediaCache {
             }
         }
 
-        self.songs = song_metadata.clone();
-        self.apparent_songs = song_metadata.iter().map(|x| x.clone()).collect();
-        self.index_filterables();
-        self.save();
+        instance.songs = song_metadata.clone();
+        instance.apparent_songs = song_metadata.iter().map(|x| x.clone()).collect();
+        instance.index_filterables();
+        let _ = instance.save();
 
-        Ok(())
+        Ok(instance)
     }
 
     /// reindex artists and albums for filtering
@@ -301,4 +318,19 @@ fn is_ext_audio(ext: Option<&OsStr>) -> bool {
     }
 
     false
+}
+
+fn clear_covers_cache() -> Result<(), io::Error> {
+    let mut path = constants::conf_dir();
+    path.push("covers");
+
+    let dir = fs::read_dir(path)?;
+
+    for i in dir {
+        if let Ok(file) = i {
+            fs::remove_file(file.path())?;
+        }
+    }
+
+    Ok(())
 }
