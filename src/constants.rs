@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 pub const BACKSTOP_LOGO: &[u8] = include_bytes!("../assets/backstopfull.png");
+pub const PLACEHOLDER_COVER: &[u8] = include_bytes!("../assets/cover_placeholder.png");
 
 pub const BACKSTOP_PAUSE_ICON_URL: &str = "https://github.com/iwantpizza10/backstop/blob/main/assets/pause.png?raw=true";
 pub const BACKSTOP_LOGO_URL: &str = "https://github.com/iwantpizza10/backstop/blob/main/assets/backstopshort_square.png?raw=true";

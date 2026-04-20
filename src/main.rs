@@ -1,12 +1,13 @@
 // #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use core::f32;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use chrono::Utc;
 use iced::widget::image::Handle;
 use iced::widget::{column, row, text};
-use iced::{Alignment, Element, Event, Length, Task, Theme};
+use iced::{Alignment, Element, Event, Length, Size, Subscription, Task, Theme, event, window};
 
 mod discord_rpc;
 mod saved_state;
@@ -15,18 +16,21 @@ mod player;
 mod queue;
 
 mod menu_view;
+mod navbar;
 
-use crate::constants::BACKSTOP_LOGO;
+use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER};
 use crate::discord_rpc::{DiscordRpc, DiscordRpcMode};
 use crate::menu_view::MenuView;
+use crate::navbar::Navbar;
 use crate::player::{CurrentSong, Player};
 use crate::saved_state::SavedState;
-use crate::saved_state::media_cache::MediaCache;
+use crate::saved_state::media_cache::{Album, Artist, MediaCache};
 use crate::saved_state::song_file_info::SongFileInfo;
 use crate::queue::Queue;
 
 fn main() -> iced::Result {
     iced::application(BackstopApp::new, BackstopApp::update, BackstopApp::view)
+        .subscription(BackstopApp::subscriptions)
         .title(BackstopApp::title)
         .theme(BackstopApp::theme)
         .window_size((1366, 768))
@@ -44,6 +48,7 @@ enum PlayingState {
 #[derive(Clone, Debug)]
 enum EventMessage {
     DoNothing,
+    WindowResize(Size),
 
     // app init stuff
     Loaded(Result<SavedState, BackstopError>),
@@ -58,10 +63,13 @@ enum EventMessage {
 
     // menu stuff
     ChangeMenuView(MenuView),
+    ChangeViewType(SongsViewType),
     ToggleQueuePeek,
 
     // song controls
     PlaySong(Arc<SongFileInfo>),
+    PlayAlbum(Arc<Album>),
+    PlayArtist(Arc<Artist>),
     PrevTrack,
     NextTrack,
     PlayPause,
@@ -110,12 +118,14 @@ enum SongsViewType {
 #[derive(Debug)]
 struct AppAssets {
     logo: iced::widget::image::Handle,
+    cover: iced::widget::image::Handle,
 }
 
 impl Default for AppAssets {
     fn default() -> Self {
         Self {
-            logo: Handle::from_bytes(BACKSTOP_LOGO)
+            logo: Handle::from_bytes(BACKSTOP_LOGO),
+            cover: Handle::from_bytes(PLACEHOLDER_COVER)
         }
     }
 }
@@ -131,6 +141,7 @@ struct AppState {
     current_song: Option<CurrentSong>,
     assets: Rc<AppAssets>,
     player: Player,
+    songs_per_row: i32,
 }
 
 impl TryFrom<SavedState> for AppState {
@@ -151,6 +162,7 @@ impl TryFrom<SavedState> for AppState {
                 current_song: None,
                 assets: Rc::new(AppAssets::default()),
                 player,
+                songs_per_row: 1,
             })
         } else {
             Err(BackstopError::LoadingError)
@@ -178,6 +190,9 @@ impl BackstopApp {
         match self {
             Self::Loading => {
                 match message {
+                    EventMessage::DoNothing => {},
+                    EventMessage::WindowResize(_) => {},
+
                     // app init stuff
                     EventMessage::Loaded(state) => {
                         if let Ok(state) = state && let Ok(loaded) = AppState::try_from(state) {
@@ -185,16 +200,24 @@ impl BackstopApp {
                         } else {
                             *self = Self::Error(BackstopError::LoadingError);
                         }
+
+                        return Task::done(EventMessage::WindowResize(Size { width: 1366.0, height: 768.0 }))
                     },
 
                     x => {
                         unimplemented!("event {:?} in context {}", x, "BackstopApp::Loading")
                     },
                 }
-            }
+            },
             Self::Loaded(state) => {
                 match message {
                     EventMessage::DoNothing => {},
+
+                    EventMessage::WindowResize(size) => {
+                        state.songs_per_row = (((size.width - 64.0) / 202.0) as i32).clamp(1, i32::MAX); // yes i would like 2147483647 songs per row thanks
+                        //                                    ^^px
+                        // todo: how wide actually is the navbar?
+                    }
 
                     // library/index stuff
 
@@ -229,9 +252,16 @@ impl BackstopApp {
                         state.menu_view = view;
                     },
 
+                    EventMessage::ChangeViewType(view) => {
+                        if let MenuView::SongsView(_) = state.menu_view {
+                            state.menu_view = MenuView::SongsView(view);
+                        }
+                    }
+
                     // todo: togglequeuepeek
 
                     // song controls
+
                     EventMessage::PlaySong(song) => {
                         if let Err(err) = state.player.play_song(Arc::clone(&song)) {
                             *self = BackstopApp::Error(err);
@@ -292,8 +322,8 @@ impl BackstopApp {
             BackstopApp::Loaded(state) => {
                 return column![
                     row![
-                        // todo: navbar
-                        state.menu_view.view(Rc::clone(&state.assets), state.saved_state.media_cache.songs())
+                        Navbar::view(state),
+                        state.menu_view.view(Rc::clone(&state.assets), state.saved_state.media_cache.songs(), state.songs_per_row)
                     ],
                     // todo: footer
                 ].into()
@@ -307,6 +337,17 @@ impl BackstopApp {
                     .size(36)
             },
         }.into()
+    }
+
+    fn subscriptions(&self) -> Subscription<EventMessage> {
+        event::listen_with(|event, _, _| {
+            match event {
+                Event::Window(window::Event::Resized(size)) => {
+                    Some(EventMessage::WindowResize(size))
+                },
+                _ => None,
+            }
+        })
     }
 
     fn title(&self) -> String {

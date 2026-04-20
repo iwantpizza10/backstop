@@ -63,8 +63,8 @@ impl PartialEq for Album {
 pub struct MediaCache {
     apparent_songs: Vec<Arc<SongFileInfo>>,
     songs: HashSet<Arc<SongFileInfo>>,
-    artists: HashSet<Artist>,
-    albums: HashSet<Album>,
+    artists: HashSet<Arc<Artist>>,
+    albums: HashSet<Arc<Album>>,
 }
 
 impl MediaCache {
@@ -205,17 +205,17 @@ impl MediaCache {
         self.artists.clear();
 
         for i in &self.songs {
-            self.artists.insert(Artist {
+            self.artists.insert(Arc::new(Artist {
                 name: i.artist(),
                 icon: i.cover.clone()
-            });
+            }));
 
             if let Some(album) = &i.album {
-                self.albums.insert(Album {
+                self.albums.insert(Arc::new(Album {
                     name: album.clone(),
                     artist: i.album_artist.clone(),
                     icon: i.cover.clone()
-                });
+                }));
             }
         }
     }

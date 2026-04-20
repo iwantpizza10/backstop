@@ -1,7 +1,8 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, rc::Rc, sync::Arc};
+use iced::{Element, widget::{column, image, mouse_area, text}};
 use serde::{Deserialize, Serialize};
 
-use crate::softunwrap_str;
+use crate::{AppAssets, EventMessage, softunwrap_str};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
 pub struct SongFileInfo {
@@ -115,5 +116,41 @@ impl SongFileInfo {
         } else {
             return "Unknown Title".to_string();
         }
+    }
+
+    pub fn view(&self, assets: Rc<AppAssets>) -> Element<'_, EventMessage> {
+        let mut col = column![];
+
+        col = col.push(if let Some(cover) = &self.cover {
+            image(cover)
+        } else {
+            image(&assets.cover)
+        }.width(192));
+
+        col = col.push(text(self.title())
+            .width(192)
+            .height(23.4) // default line height * 18
+            .wrapping(text::Wrapping::WordOrGlyph)
+            .size(18));
+
+        if let Some(album) = &self.album {
+            if let Some(track) = &self.track_number {
+                col = col.push(text!("{album} #{track}")
+                    .width(192)
+                    .size(12));
+            } else {
+                col = col.push(text(album)
+                    .width(192)
+                    .size(12));
+            }
+        }
+
+        col = col.push(text(self.artist())
+            .width(192)
+            .size(12));
+
+        mouse_area(col)
+            .on_press(EventMessage::PlaySong(Arc::new(self.clone())))
+            .into()
     }
 }

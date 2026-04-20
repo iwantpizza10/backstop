@@ -63,7 +63,6 @@ impl Player {
         self.audio_player.clear();
         self.audio_player.append(source);
         self.audio_player.play();
-        println!("should be playing");
 
         Ok(())
     }
