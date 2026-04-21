@@ -1,8 +1,8 @@
-use std::{path::PathBuf, rc::Rc, sync::Arc};
-use iced::{Element, widget::{column, image, mouse_area, text}};
+use std::{path::PathBuf, sync::Arc};
+use iced::widget::{image, text};
 use serde::{Deserialize, Serialize};
 
-use crate::{AppAssets, EventMessage, softunwrap_str};
+use crate::{EventMessage, menu_view::SongListItem, softunwrap_str};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
 pub struct SongFileInfo {
@@ -117,40 +117,38 @@ impl SongFileInfo {
             return "Unknown Title".to_string();
         }
     }
+}
 
-    pub fn view(&self, assets: Rc<AppAssets>) -> Element<'_, EventMessage> {
-        let mut col = column![];
-
-        col = col.push(if let Some(cover) = &self.cover {
-            image(cover)
+impl SongListItem for SongFileInfo {
+    fn image(&self) -> Option<image::Image<image::Handle>> {
+        if let Some(cover) = &self.cover {
+            Some(image(cover))
         } else {
-            image(&assets.cover)
-        }.width(192));
+            None
+        }
+    }
 
-        col = col.push(text(self.title())
-            .width(192)
-            .height(23.4) // default line height * 18
-            .wrapping(text::Wrapping::WordOrGlyph)
-            .size(18));
+    fn textrow_one<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+        Some(self.title())
+    }
 
+    fn textrow_two<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
         if let Some(album) = &self.album {
             if let Some(track) = &self.track_number {
-                col = col.push(text!("{album} #{track}")
-                    .width(192)
-                    .size(12));
+                return Some(format!("{album} #{track}"));
             } else {
-                col = col.push(text(album)
-                    .width(192)
-                    .size(12));
+                return Some(album.clone());
             }
         }
 
-        col = col.push(text(self.artist())
-            .width(192)
-            .size(12));
+        None
+    }
 
-        mouse_area(col)
-            .on_press(EventMessage::PlaySong(Arc::new(self.clone())))
-            .into()
+    fn textrow_three<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+        Some(self.artist())
+    }
+
+    fn event(&self) -> EventMessage {
+        EventMessage::PlaySong(Arc::new(self.clone()))
     }
 }

@@ -24,7 +24,7 @@ use crate::menu_view::MenuView;
 use crate::navbar::Navbar;
 use crate::player::{CurrentSong, Player};
 use crate::saved_state::SavedState;
-use crate::saved_state::media_cache::{Album, Artist, MediaCache};
+use crate::saved_state::media_cache::{Album, Artist, CacheFilterType, MediaCache};
 use crate::saved_state::song_file_info::SongFileInfo;
 use crate::queue::Queue;
 
@@ -110,9 +110,9 @@ enum SongsViewType {
     #[default]
     All,
     ArtistSelect,
-    Artist(String),
+    Artist(Arc<Artist>),
     AlbumSelect,
-    Album(String),
+    Album(Arc<Album>),
 }
 
 #[derive(Debug)]
@@ -141,7 +141,7 @@ struct AppState {
     current_song: Option<CurrentSong>,
     assets: Rc<AppAssets>,
     player: Player,
-    songs_per_row: i32,
+    items_per_row: i32,
 }
 
 impl TryFrom<SavedState> for AppState {
@@ -162,7 +162,7 @@ impl TryFrom<SavedState> for AppState {
                 current_song: None,
                 assets: Rc::new(AppAssets::default()),
                 player,
-                songs_per_row: 1,
+                items_per_row: 1,
             })
         } else {
             Err(BackstopError::LoadingError)
@@ -214,9 +214,7 @@ impl BackstopApp {
                     EventMessage::DoNothing => {},
 
                     EventMessage::WindowResize(size) => {
-                        state.songs_per_row = (((size.width - 64.0) / 202.0) as i32).clamp(1, i32::MAX); // yes i would like 2147483647 songs per row thanks
-                        //                                    ^^px
-                        // todo: how wide actually is the navbar?
+                        state.items_per_row = (((size.width - 64.0) / 202.0) as i32).clamp(1, i32::MAX); // yes i would like 2147483647 songs per row thanks
                     }
 
                     // library/index stuff
@@ -254,6 +252,22 @@ impl BackstopApp {
 
                     EventMessage::ChangeViewType(view) => {
                         if let MenuView::SongsView(_) = state.menu_view {
+                            if let SongsViewType::Artist(artist) = &view {
+                                let artist = Arc::clone(&artist);
+
+                                state.saved_state.media_cache.filter(CacheFilterType::Artist(artist));
+                            }
+
+                            if let SongsViewType::Album(album) = &view {
+                                let album = Arc::clone(&album);
+
+                                state.saved_state.media_cache.filter(CacheFilterType::Album(album));
+                            }
+
+                            if let SongsViewType::All = &view {
+                                state.saved_state.media_cache.filter(CacheFilterType::None);
+                            }
+
                             state.menu_view = MenuView::SongsView(view);
                         }
                     }
@@ -280,6 +294,17 @@ impl BackstopApp {
                             state.discord_rpc.play_song(cur_song);
                         }
                     }
+
+                    // im thinkin these next two are question marks cause they
+                    // kinda might not be needed if i queue songs from the
+                    // `PlaySong` one
+
+                    // only problem with that is that i may also make
+                    // ctrl+click or something play entire albums or something?
+                    // idk that seems a bit odd cause you can just click into it
+
+                    // todo: playalbum (?)
+                    // todo: playartist (?)
                     // todo: prevtrack
                     // todo: nexttrack
                     // todo: playpause
@@ -323,7 +348,7 @@ impl BackstopApp {
                 return column![
                     row![
                         Navbar::view(state),
-                        state.menu_view.view(Rc::clone(&state.assets), state.saved_state.media_cache.songs(), state.songs_per_row)
+                        state.menu_view.view(state)
                     ],
                     // todo: footer
                 ].into()

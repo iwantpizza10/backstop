@@ -182,15 +182,15 @@ impl BackstopSettings {
 impl Default for BackstopSettings {
     fn default() -> Self {
         Self {
-            shuffle: Default::default(),
-            repeat: Default::default(),
+            shuffle: false,
+            repeat: false,
             volume: -0.0,
             speed: 1.0,
             first_launch: true,
-            cache_last_updated: Default::default(),
-            media_directories: Default::default(),
-            rpc_mode: Default::default(),
-            rpc_list: Default::default(),
+            cache_last_updated: DateTime::UNIX_EPOCH,
+            media_directories: HashSet::new(),
+            rpc_mode: DiscordRpcMode::default(),
+            rpc_list: HashSet::new(),
         }
     }
 }
