@@ -1,10 +1,10 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{fmt::Debug, path::PathBuf, sync::Arc};
 use iced::widget::{image, text};
 use serde::{Deserialize, Serialize};
 
 use crate::{EventMessage, menu_view::SongListItem, softunwrap_str};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
 pub struct SongFileInfo {
     pub path: PathBuf,
     title: Option<String>,
@@ -16,6 +16,12 @@ pub struct SongFileInfo {
     pub track_number: Option<u16>,
     pub year: Option<i32>,
     pub cover: Option<PathBuf>,
+}
+
+impl Debug for SongFileInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SongFileInfo {{ \"{} - {}\" }}", self.artist(), self.title())
+    }
 }
 
 impl SongFileInfo {

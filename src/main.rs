@@ -68,8 +68,8 @@ enum EventMessage {
 
     // song controls
     PlaySong(Arc<SongFileInfo>),
-    PlayAlbum(Arc<Album>),
-    PlayArtist(Arc<Artist>),
+    AppendToQueue(Arc<SongFileInfo>),
+    NextInQueue(Arc<SongFileInfo>),
     PrevTrack,
     NextTrack,
     PlayPause,
@@ -281,6 +281,11 @@ impl BackstopApp {
                             *self = BackstopApp::Error(err);
                         } else {
                             state.playing = PlayingState::Playing;
+                            state.queue = Queue::from_vec(state.saved_state.media_cache.songs(), Arc::clone(&song));
+
+                            if let Some(queue) = &mut state.queue && state.saved_state.settings.get_shuffle() {
+                                queue.shuffle();
+                            }
 
                             let cur_song = CurrentSong {
                                 duration: state.player.get_duration(),
@@ -289,22 +294,13 @@ impl BackstopApp {
                             };
 
                             state.current_song = Some(cur_song.clone());
-
                             state.discord_rpc.update_playing_state(state.playing);
                             state.discord_rpc.play_song(cur_song);
                         }
-                    }
+                    },
 
-                    // im thinkin these next two are question marks cause they
-                    // kinda might not be needed if i queue songs from the
-                    // `PlaySong` one
-
-                    // only problem with that is that i may also make
-                    // ctrl+click or something play entire albums or something?
-                    // idk that seems a bit odd cause you can just click into it
-
-                    // todo: playalbum (?)
-                    // todo: playartist (?)
+                    // todo: appendtoqueue
+                    // todo: nextinqueue
                     // todo: prevtrack
                     // todo: nexttrack
                     // todo: playpause
