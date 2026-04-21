@@ -24,7 +24,7 @@ use crate::menu_view::MenuView;
 use crate::navbar::Navbar;
 use crate::player::{CurrentSong, Player};
 use crate::saved_state::SavedState;
-use crate::saved_state::media_cache::{Album, Artist, CacheFilterType, MediaCache};
+use crate::saved_state::media_cache::{Album, Artist, CacheFilterType, CacheSortType, MediaCache};
 use crate::saved_state::song_file_info::SongFileInfo;
 use crate::queue::Queue;
 
@@ -64,6 +64,7 @@ enum EventMessage {
     // menu stuff
     ChangeMenuView(MenuView),
     ChangeViewType(SongsViewType),
+    ToggleSortType,
     ToggleQueuePeek,
 
     // song controls
@@ -132,7 +133,6 @@ impl Default for AppAssets {
 
 #[derive(Debug)]
 struct AppState {
-    error: Option<BackstopError>,
     menu_view: MenuView,
     saved_state: SavedState,
     playing: PlayingState,
@@ -142,6 +142,7 @@ struct AppState {
     assets: Rc<AppAssets>,
     player: Player,
     items_per_row: i32,
+    sort_type: CacheSortType,
 }
 
 impl TryFrom<SavedState> for AppState {
@@ -153,7 +154,6 @@ impl TryFrom<SavedState> for AppState {
 
         if let Ok(player) = player && let Ok(rpc) = rpc {
             Ok(Self {
-                error: None,
                 menu_view: if value.settings.get_first_launch() { MenuView::Welcome } else { MenuView::SongsView(SongsViewType::All) },
                 discord_rpc: rpc,
                 saved_state: value,
@@ -163,6 +163,7 @@ impl TryFrom<SavedState> for AppState {
                 assets: Rc::new(AppAssets::default()),
                 player,
                 items_per_row: 1,
+                sort_type: CacheSortType::default(),
             })
         } else {
             Err(BackstopError::LoadingError)
@@ -270,6 +271,13 @@ impl BackstopApp {
                             }
 
                             state.menu_view = MenuView::SongsView(view);
+                        }
+                    },
+
+                    EventMessage::ToggleSortType => {
+                        state.sort_type = match state.sort_type {
+                            CacheSortType::ArtistAlphabetical => CacheSortType::TitleAlphabetical,
+                            CacheSortType::TitleAlphabetical => CacheSortType::ArtistAlphabetical,
                         }
                     }
 

@@ -14,9 +14,20 @@ use crate::menu_view::SongListItem;
 use crate::{EventMessage, SongsViewType, constants, softunwrap_str};
 use crate::saved_state::song_file_info::SongFileInfo;
 
+#[derive(Debug, Default)]
 pub enum CacheSortType {
     TitleAlphabetical,
+    #[default]
     ArtistAlphabetical,
+}
+
+impl CacheSortType {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::TitleAlphabetical => "By title (alphabetical)",
+            Self::ArtistAlphabetical => "By artist (alphabetical)",
+        }
+    }
 }
 
 pub enum CacheFilterType {

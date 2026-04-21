@@ -31,3 +31,30 @@ macro_rules! softunwrap_str {
         $x.map_or(None, |a| Some(a.to_string()))
     };
 }
+
+#[macro_export(local_inner_macros)]
+macro_rules! tooltip_gen {
+    ($a:expr, $b:expr) => {
+        iced::widget::tooltip($a, iced::widget::button($b).style(|_, _| {
+                iced::widget::button::Style {
+                    background: Some(iced::Background::Color(iced::Color::BLACK)),
+                    text_color: iced::Color::WHITE,
+                    border: iced::Border::default().rounded(5),
+                    shadow: iced::Shadow::default(),
+                    snap: false
+                }
+            }), iced::widget::tooltip::Position::Right)
+    };
+
+    ($a:expr, $b:expr, $c:expr) => {
+        iced::widget::tooltip($a, iced::widget::button($b).style(|_, _| {
+                iced::widget::button::Style {
+                    background: Some(iced::Background::Color(iced::Color::BLACK)),
+                    text_color: iced::Color::WHITE,
+                    border: iced::Border::default().rounded(5),
+                    shadow: iced::Shadow::default(),
+                    snap: false
+                }
+            }), $c)
+    };
+}
