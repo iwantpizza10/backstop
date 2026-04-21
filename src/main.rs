@@ -215,6 +215,7 @@ impl BackstopApp {
 
                     EventMessage::WindowResize(size) => {
                         state.items_per_row = (((size.width - 64.0) / 202.0) as i32).clamp(1, i32::MAX); // yes i would like 2147483647 songs per row thanks
+                        //                       navbar width ^^      ^^^ item width + 10px (spacing)
                     }
 
                     // library/index stuff
