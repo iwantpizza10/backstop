@@ -18,6 +18,7 @@ mod queue;
 mod menu_view;
 mod navbar;
 mod footer;
+mod updating_progress_bar;
 
 use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::discord_rpc::{DiscordRpc, DiscordRpcMode};
@@ -371,6 +372,10 @@ impl BackstopApp {
 
                     EventMessage::ToggleShuffle => {
                         state.saved_state.settings.toggle_shuffle();
+
+                        if let Some(q) = &mut state.queue && state.saved_state.settings.get_shuffle() == false {
+                            q.unshuffle();
+                        }
                     },
 
                     EventMessage::ToggleRepeat => {

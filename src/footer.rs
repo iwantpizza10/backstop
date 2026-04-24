@@ -1,6 +1,6 @@
 use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, progress_bar, row, slider, svg, text}};
 
-use crate::{AppState, EventMessage, PlayingState, constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB}, menu_view::MenuView};
+use crate::{AppState, EventMessage, PlayingState, constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB}, menu_view::MenuView, updating_progress_bar::updating_progress_bar};
 
 pub struct Footer {}
 
@@ -90,7 +90,7 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     column![
         row![
             text!("{}", timestamp_one),
-            progress_bar(0.0..=state.current_song.clone().map_or(100.0, |x| x.duration.as_millis() as f32), 0.0)
+            updating_progress_bar(0.0..=state.player.get_duration().as_millis() as f32, || state.player.get_pos().as_millis() as f32)
                 .girth(8),
             text!("{}", timestamp_two),
         ]
