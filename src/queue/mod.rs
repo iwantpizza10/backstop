@@ -76,8 +76,12 @@ impl Queue {
             return None;
         }
 
-        self.position += 1;
-        Some(Arc::clone(&self.songs[self.position]))
+        if self.position + 1 >= self.songs.len() {
+            None
+        } else {
+            self.position += 1;
+            Some(Arc::clone(&self.songs[self.position]))
+        }
     }
 
     /// returns the next 3 songs in the queue

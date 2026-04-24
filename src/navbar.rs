@@ -5,6 +5,8 @@ use crate::tooltip_gen;
 
 pub struct Navbar {}
 
+// todo: custom Button::Style mthod thing for rounding of buttons and also colors ofc
+
 impl Navbar {
     pub fn view(state: &AppState) -> Element<'_, EventMessage> {
         let top_nav = column![

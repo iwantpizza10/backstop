@@ -17,9 +17,11 @@ mod queue;
 
 mod menu_view;
 mod navbar;
+mod footer;
 
 use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER};
 use crate::discord_rpc::{DiscordRpc, DiscordRpcMode};
+use crate::footer::Footer;
 use crate::menu_view::MenuView;
 use crate::navbar::Navbar;
 use crate::player::{CurrentSong, Player};
@@ -143,6 +145,7 @@ struct AppState {
     player: Player,
     items_per_row: i32,
     sort_type: CacheSortType,
+    peeking_queue: bool,
 }
 
 impl TryFrom<SavedState> for AppState {
@@ -164,6 +167,7 @@ impl TryFrom<SavedState> for AppState {
                 player,
                 items_per_row: 1,
                 sort_type: CacheSortType::default(),
+                peeking_queue: false,
             })
         } else {
             Err(BackstopError::LoadingError)
@@ -284,7 +288,6 @@ impl BackstopApp {
                     // todo: togglequeuepeek
 
                     // song controls
-
                     EventMessage::PlaySong(song) => {
                         if let Err(err) = state.player.play_song(Arc::clone(&song)) {
                             *self = BackstopApp::Error(err);
@@ -310,18 +313,63 @@ impl BackstopApp {
 
                     // todo: appendtoqueue
                     // todo: nextinqueue
-                    // todo: prevtrack
-                    // todo: nexttrack
-                    // todo: playpause
-                    // todo: toggleshuffle
-                    // todo: togglerepeat
                     
+                    EventMessage::NextTrack | EventMessage::PrevTrack => {
+                        if let Some(q) = &mut state.queue && let Some(song) = match message {
+                            EventMessage::NextTrack => {q.next_song()},
+                            EventMessage::PrevTrack => {q.previous_song()},
+                            _ => { panic!("literally how") } 
+                        } {
+                            if let Err(err) = state.player.play_song(Arc::clone(&song)) {
+                                *self = BackstopApp::Error(err);
+                            } else {
+                                state.playing = PlayingState::Playing;
+
+                                let cur_song = CurrentSong {
+                                    duration: state.player.get_duration(),
+                                    start_time: Utc::now(),
+                                    file_info: song,
+                                };
+
+                                state.current_song = Some(cur_song.clone());
+                                state.discord_rpc.update_playing_state(state.playing);
+                                state.discord_rpc.play_song(cur_song);
+                            }
+                        }
+                    },
+
+                    EventMessage::PlayPause => {
+                        match state.playing {
+                            PlayingState::NotPlaying => {},
+                            PlayingState::Paused => {
+                                state.playing = PlayingState::Playing;
+                                state.player.resume();
+                            },
+                            PlayingState::Playing => {
+                                state.playing = PlayingState::Paused;
+                                state.player.pause();
+                            }
+                        }
+
+                        state.discord_rpc.update_playing_state(state.playing);
+                    }
+
+                    EventMessage::ToggleShuffle => {
+                        state.saved_state.settings.toggle_shuffle();
+                    }
+
+                    EventMessage::ToggleRepeat => {
+                        state.saved_state.settings.toggle_repeat();
+                    }
+
                     // state settings
                     // todo: setvolume
                     // todo: setspeed
 
                     // discord rpc
-                    // todo: cleardiscordrpc
+                    EventMessage::ClearDiscordRpc => {
+                        let _ = state.discord_rpc.clear_rpc();
+                    }
                     // todo: setdiscordrpcmode
                     // todo: removerpclistentry
                     // todo: addrpclistentry
@@ -355,7 +403,7 @@ impl BackstopApp {
                         Navbar::view(state),
                         state.menu_view.view(state)
                     ],
-                    // todo: footer
+                    Footer::view(state),
                 ].into()
             },
             BackstopApp::Error(error) => {

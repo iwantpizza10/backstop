@@ -79,7 +79,7 @@ impl DiscordRpc {
         self.song_start_time = Some(song.start_time);
         self.playing_state = PlayingState::Playing;
 
-        let _ = self.rpc().unwrap();
+        let _ = self.rpc();
     }
 
     /// clears discord rpc
