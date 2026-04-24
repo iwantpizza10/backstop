@@ -14,7 +14,7 @@ use crate::menu_view::SongListItem;
 use crate::{EventMessage, SongsViewType, constants, softunwrap_str};
 use crate::saved_state::song_file_info::SongFileInfo;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub enum CacheSortType {
     TitleAlphabetical,
     #[default]

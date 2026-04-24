@@ -1,4 +1,4 @@
-use iced::{Element, Length, alignment::Vertical, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, progress_bar, row, slider, svg, text}};
+use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, progress_bar, row, slider, svg, text}};
 
 use crate::{AppState, EventMessage, PlayingState, constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB}, menu_view::MenuView};
 
@@ -51,11 +51,14 @@ fn left_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
                 .align_y(Vertical::Center),
         ]
             .spacing(8)
+            .width(Length::Fill)
             .align_y(Vertical::Center)
             .into();
     }
 
-    Row::new().into()
+    Row::new()
+        .width(Length::Fill)
+        .into()
 }
 
 fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
@@ -85,9 +88,14 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     }
 
     column![
-        progress_bar(0.0..=state.current_song.clone().map_or(100.0, |x| x.duration.as_millis() as f32), 0.0)
-            .girth(8),
-        text!("{} / {}", timestamp_one, timestamp_two),
+        row![
+            text!("{}", timestamp_one),
+            progress_bar(0.0..=state.current_song.clone().map_or(100.0, |x| x.duration.as_millis() as f32), 0.0)
+                .girth(8),
+            text!("{}", timestamp_two),
+        ]
+            .spacing(16)
+            .align_y(Vertical::Center),
         // todo: custom style buttons
         row![
             make_button!("../assets/icons/eraser.svg", EventMessage::ClearDiscordRpc),
@@ -103,14 +111,22 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
             make_button!("../assets/icons/list-plus.svg", EventMessage::ToggleQueuePeek),
         ]
             .spacing(8),
-    ].into()
+    ]
+        .width(384)
+        .into()
 }
 
 fn right_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     column![
-        text!("vol: {}dB", state.saved_state.settings.get_volume_db()),
-        slider(0..=VOLUME_DYNAMIC_RANGE_DB, state.saved_state.settings.get_volume_step(), EventMessage::SetVolume),
-        text!("spd: {}x", state.saved_state.settings.get_speed()),
-        slider(1..=SPEED_STEPS, state.saved_state.settings.get_speed_step(), EventMessage::SetSpeed),
-    ].into()
+        text!("Vol: {}dB", state.saved_state.settings.get_volume_db()),
+        slider(0..=VOLUME_DYNAMIC_RANGE_DB, state.saved_state.settings.get_volume_step(), EventMessage::SetVolume)
+            .width(128),
+        text!("Spd: {}x", state.saved_state.settings.get_speed()),
+        slider(1..=SPEED_STEPS, state.saved_state.settings.get_speed_step(), EventMessage::SetSpeed)
+            .default(SPEED_STEPS / 2)
+            .width(128),
+    ]
+        .align_x(Horizontal::Right)
+        .width(Length::Fill)
+        .into()
 }

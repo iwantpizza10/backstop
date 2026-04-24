@@ -17,7 +17,6 @@ impl SavedState {
         let settings = BackstopSettings::load();
         let media_cache = MediaCache::load();
 
-
         if let Ok(settings) = settings && let Ok(media_cache) = media_cache {
             Ok(Self {
                 settings,

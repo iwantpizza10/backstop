@@ -200,7 +200,9 @@ impl BackstopApp {
 
                     // app init stuff
                     EventMessage::Loaded(state) => {
-                        if let Ok(state) = state && let Ok(loaded) = AppState::try_from(state) {
+                        if let Ok(state) = state && let Ok(mut loaded) = AppState::try_from(state) {
+                            loaded.saved_state.media_cache.sort(CacheSortType::default());
+
                             *self = Self::Loaded(loaded);
                         } else {
                             *self = Self::Error(BackstopError::LoadingError);
@@ -290,7 +292,9 @@ impl BackstopApp {
                         state.sort_type = match state.sort_type {
                             CacheSortType::ArtistAlphabetical => CacheSortType::TitleAlphabetical,
                             CacheSortType::TitleAlphabetical => CacheSortType::ArtistAlphabetical,
-                        }
+                        };
+
+                        state.saved_state.media_cache.sort(state.sort_type.clone());
                     },
 
                     EventMessage::ToggleQueuePeek => {
@@ -415,8 +419,12 @@ impl BackstopApp {
                     },
                 }
             },
-            Self::Error(x) => {
-                unimplemented!("event {:?} in context {}", message, format!("BackstopApp::Error({:?})", x))
+            Self::Error(err) => {
+                match message {
+                    EventMessage::WindowResize(_) => {},
+
+                    x => unimplemented!("event {:?} in context {}", x, format!("BackstopApp::Error({:?})", err)),
+                }
             },
         }
 
