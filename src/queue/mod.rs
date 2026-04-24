@@ -66,8 +66,12 @@ impl Queue {
             return None;
         }
 
-        self.position -= 1;
-        Some(Arc::clone(&self.songs[self.position]))
+        if self.position == 0 {
+            None
+        } else {
+            self.position -= 1;
+            Some(Arc::clone(&self.songs[self.position]))
+        }
     }
 
     /// advances the queue position & returns the new current song. returns None if advancing is not possible

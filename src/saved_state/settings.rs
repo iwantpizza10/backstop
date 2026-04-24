@@ -5,7 +5,7 @@ use iced::time;
 use serde::{Deserialize, Serialize};
 use serde_binary::binary_stream::Endian;
 
-use crate::constants;
+use crate::constants::{self, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::discord_rpc::DiscordRpcMode;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -105,7 +105,15 @@ impl BackstopSettings {
         10f32.powf(self.volume / 20.0)
     }
 
-    /// sets the volume in **decibels**
+    /// returns the current volume's step (for use in the slider ui thing)
+    pub fn get_volume_step(&self) -> i32 {
+        let db = self.get_volume_db() as i32 + VOLUME_DYNAMIC_RANGE_DB;
+
+        // db.clamp(0, VOLUME_DYNAMIC_RANGE_DB)
+        db
+    }
+
+    /// sets the volume in **decibels**. does not adjust the audio player
     pub fn set_volume_db(&mut self, volume: f32) {
         self.volume = volume;
     }
@@ -113,6 +121,11 @@ impl BackstopSettings {
     /// get the configued playback speed
     pub fn get_speed(&self) -> f32 {
         self.speed
+    }
+    
+    /// returns the current speed's step (for use in the slider ui thing)
+    pub fn get_speed_step(&self) -> i32 {
+        (self.get_speed() * (SPEED_STEPS as f32 / 2.0)) as i32
     }
 
     /// set the configured playback speed (does NOT adjust

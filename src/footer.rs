@@ -1,6 +1,6 @@
-use iced::{Element, Length, alignment::Vertical, widget::{Column, Image, Row, button, column, image::Handle, row, svg, text}};
+use iced::{Element, Length, alignment::Vertical, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, row, slider, svg, text}};
 
-use crate::{AppState, EventMessage, PlayingState};
+use crate::{AppState, EventMessage, PlayingState, constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB}, menu_view::MenuView};
 
 pub struct Footer {}
 
@@ -38,7 +38,8 @@ fn left_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
             .size(12));
 
         return row![
-            Image::new(image_handle),
+            mouse_area(Image::new(image_handle))
+                .on_press(EventMessage::ChangeMenuView(MenuView::CoverArtView)),
             row![
                 column![
                     text(song.file_info.title())
@@ -86,7 +87,6 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     column![
         // todo: proper song progress bar
         text!("{} / {}", timestamp_one, timestamp_two),
-
         // todo: custom style buttons
         row![
             make_button!("../assets/icons/eraser.svg", EventMessage::ClearDiscordRpc),
@@ -107,8 +107,9 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
 
 fn right_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     column![
-        // todo: volume slider
-        // todo: speed slider
-        text!("sliders n stuff"),
+        text!("vol: {}dB", state.saved_state.settings.get_volume_db()),
+        slider(0..=VOLUME_DYNAMIC_RANGE_DB, state.saved_state.settings.get_volume_step(), EventMessage::SetVolume),
+        text!("spd: {}x", state.saved_state.settings.get_speed()),
+        slider(1..=SPEED_STEPS, state.saved_state.settings.get_speed_step(), EventMessage::SetSpeed),
     ].into()
 }

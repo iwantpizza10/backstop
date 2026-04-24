@@ -19,7 +19,7 @@ mod menu_view;
 mod navbar;
 mod footer;
 
-use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER};
+use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::discord_rpc::{DiscordRpc, DiscordRpcMode};
 use crate::footer::Footer;
 use crate::menu_view::MenuView;
@@ -80,8 +80,8 @@ enum EventMessage {
     ToggleRepeat,
 
     // state settings
-    SetVolume(f32),
-    SetSpeed(f32),
+    SetVolume(i32),
+    SetSpeed(i32),
 
     // discord rpc
     ClearDiscordRpc,
@@ -283,11 +283,14 @@ impl BackstopApp {
                             CacheSortType::ArtistAlphabetical => CacheSortType::TitleAlphabetical,
                             CacheSortType::TitleAlphabetical => CacheSortType::ArtistAlphabetical,
                         }
-                    }
+                    },
 
-                    // todo: togglequeuepeek
+                    EventMessage::ToggleQueuePeek => {
+                        state.peeking_queue = !state.peeking_queue;
+                    },
 
                     // song controls
+
                     EventMessage::PlaySong(song) => {
                         if let Err(err) = state.player.play_song(Arc::clone(&song)) {
                             *self = BackstopApp::Error(err);
@@ -352,24 +355,33 @@ impl BackstopApp {
                         }
 
                         state.discord_rpc.update_playing_state(state.playing);
-                    }
+                    },
 
                     EventMessage::ToggleShuffle => {
                         state.saved_state.settings.toggle_shuffle();
-                    }
+                    },
 
                     EventMessage::ToggleRepeat => {
                         state.saved_state.settings.toggle_repeat();
-                    }
+                    },
 
                     // state settings
-                    // todo: setvolume
-                    // todo: setspeed
+
+                    EventMessage::SetVolume(vol_step) => {
+                        state.saved_state.settings.set_volume_db((vol_step - VOLUME_DYNAMIC_RANGE_DB) as f32);
+                        state.player.set_volume(state.saved_state.settings.get_volume_linear());
+                    },
+
+                    EventMessage::SetSpeed(speed_step) => {
+                        state.saved_state.settings.set_speed(speed_step as f32 / (SPEED_STEPS / 2) as f32);
+                        state.player.set_speed(state.saved_state.settings.get_speed());
+                    },
 
                     // discord rpc
+
                     EventMessage::ClearDiscordRpc => {
                         let _ = state.discord_rpc.clear_rpc();
-                    }
+                    },
                     // todo: setdiscordrpcmode
                     // todo: removerpclistentry
                     // todo: addrpclistentry
