@@ -16,6 +16,7 @@ rfd = "0.17.2"
 rodio = "0.22.2"
 serde = { version = "1.0.228", features = ["rc"] }
 serde-binary = "0.5.0"
+serde_repr = "0.1.20"
 # serde_repr = "0.1.20"
 tokio = { version = "1.52.1", features = ["macros"] }
 uuid = { version = "1.23.1", features = ["v4"] }

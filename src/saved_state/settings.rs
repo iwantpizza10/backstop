@@ -8,7 +8,7 @@ use serde_binary::binary_stream::Endian;
 use crate::constants::{self, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::discord_rpc::DiscordRpcMode;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct BackstopSettings {
     shuffle: bool,
     repeat: bool,

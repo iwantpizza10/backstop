@@ -2,14 +2,15 @@ use chrono::{DateTime, Utc};
 use discord_rich_presence::activity::{Activity, ActivityType, Assets, Button, StatusDisplayType, Timestamps};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use discord_rich_presence::error::Error;
-use serde::{Deserialize, Serialize};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::PlayingState;
 use crate::constants::{BACKSTOP_LOGO_URL, BACKSTOP_PAUSE_ICON_URL, BACKSTOP_REPO_URL, DISCORD_APP_ID};
 use crate::player::CurrentSong;
 use crate::saved_state::settings::BackstopSettings;
 
-#[derive(Clone, Default, Serialize, Deserialize, Debug, Copy, PartialEq)]
+#[derive(Clone, Default, Debug, Copy, PartialEq, Serialize_repr, Deserialize_repr)]
+#[repr(u8)]
 pub enum DiscordRpcMode {
     // todo: change default back to blacklist
     Blacklist,

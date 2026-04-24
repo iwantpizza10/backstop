@@ -418,6 +418,7 @@ dependencies = [
  "rodio",
  "serde",
  "serde-binary",
+ "serde_repr",
  "tokio",
  "uuid 1.23.1",
 ]
