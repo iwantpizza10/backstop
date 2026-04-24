@@ -233,6 +233,14 @@ impl BackstopApp {
 
                     EventMessage::AddMediaDir(dir) => {
                         state.saved_state.settings.add_media_directory(dir);
+
+                        let settings_two = state.saved_state.settings.clone();
+
+                        return Task::future(async move {
+                            let _ = settings_two.clone().save().await;
+
+                            EventMessage::DoNothing
+                        });
                     },
 
                     // todo: triggerremovemediadir
@@ -370,11 +378,27 @@ impl BackstopApp {
                     EventMessage::SetVolume(vol_step) => {
                         state.saved_state.settings.set_volume_db((vol_step - VOLUME_DYNAMIC_RANGE_DB) as f32);
                         state.player.set_volume(state.saved_state.settings.get_volume_linear());
+
+                        let settings_two = state.saved_state.settings.clone();
+
+                        return Task::future(async move {
+                            let _ = settings_two.clone().save().await;
+
+                            EventMessage::DoNothing
+                        });
                     },
 
                     EventMessage::SetSpeed(speed_step) => {
                         state.saved_state.settings.set_speed(speed_step as f32 / (SPEED_STEPS / 2) as f32);
                         state.player.set_speed(state.saved_state.settings.get_speed());
+
+                        let settings_two = state.saved_state.settings.clone();
+
+                        return Task::future(async move {
+                            let _ = settings_two.clone().save().await;
+
+                            EventMessage::DoNothing
+                        });
                     },
 
                     // discord rpc

@@ -1,4 +1,4 @@
-use iced::{Element, Length, alignment::Vertical, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, row, slider, svg, text}};
+use iced::{Element, Length, alignment::Vertical, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, progress_bar, row, slider, svg, text}};
 
 use crate::{AppState, EventMessage, PlayingState, constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB}, menu_view::MenuView};
 
@@ -85,7 +85,8 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     }
 
     column![
-        // todo: proper song progress bar
+        progress_bar(0.0..=state.current_song.clone().map_or(100.0, |x| x.duration.as_millis() as f32), 0.0)
+            .girth(8),
         text!("{} / {}", timestamp_one, timestamp_two),
         // todo: custom style buttons
         row![

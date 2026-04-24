@@ -140,6 +140,8 @@ pub trait SongListItem {
         EventMessage::DoNothing
     }
 
+    // todo: fix text wrapping/overlapping
+
     /// leave this implementation as default unless needed
     fn view(&self, assets: Rc<AppAssets>) -> Element<'_, EventMessage> {
         let mut col = column![];
