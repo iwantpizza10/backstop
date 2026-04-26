@@ -1,4 +1,5 @@
-use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, progress_bar, row, slider, svg, text}};
+use std::time::Duration;
+use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, row, slider, svg, text}};
 
 use crate::{AppState, EventMessage, PlayingState, constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB}, menu_view::MenuView, updating_progress_bar::updating_progress_bar};
 
@@ -62,19 +63,8 @@ fn left_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
 }
 
 fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
-    let timestamp_one;
-    let timestamp_two;
-
-    if let Some(song) = &state.current_song {
-        timestamp_one = String::from("?:??");
-        let secs = song.duration.as_secs() % 60;
-        let mins = song.duration.as_secs() / 60;
-
-        timestamp_two = format!("{mins}:{secs:02}");
-    } else {
-        timestamp_one = String::from("0:00");
-        timestamp_two = String::from("0:00");
-    }
+    let timestamp_one = duration_to_string(state.player.get_pos());
+    let timestamp_two = duration_to_string(state.player.get_duration());
 
     macro_rules! make_button {
         ($path:expr, $evt:expr) => {
@@ -129,4 +119,11 @@ fn right_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
         .align_x(Horizontal::Right)
         .width(Length::Fill)
         .into()
+}
+
+fn duration_to_string(dur: Duration) -> String {
+    let minutes = dur.as_secs() / 60;
+    let seconds = dur.as_secs() - (minutes * 60);
+
+    format!("{:02}:{:02}", minutes, seconds)
 }

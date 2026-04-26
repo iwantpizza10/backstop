@@ -69,32 +69,26 @@ impl<Message, Renderer, F> Widget<Message, iced::Theme, Renderer> for UpdatingPr
         <ProgressBar<'_, iced::Theme> as Widget<Message, iced::Theme, Renderer>>::size(&self.as_progress_bar())
     }
 
-    fn layout(&mut self, tree: &mut Tree, renderer: &Renderer, limits: &layout::Limits ) -> layout::Node {
+    fn layout(&mut self, tree: &mut Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let mut inner = self.as_progress_bar();
 
-        <ProgressBar<'_, iced::Theme> as Widget<Message, iced::Theme, Renderer>>::layout(&mut inner, tree, renderer, limits,)
+        <ProgressBar<'_, iced::Theme> as Widget<Message, iced::Theme, Renderer>>::layout(&mut inner, tree, renderer, limits)
     }
 
     fn update(&mut self, tree: &mut Tree, event: &Event, layout: Layout<'_>, cursor: mouse::Cursor, // more!
     renderer: &Renderer, clipboard: &mut dyn Clipboard, shell: &mut iced::advanced::Shell<'_, Message>, viewport: &Rectangle ) {
-        if let Event::Window(window::Event::RedrawRequested(now)) = event
-            // && self.should_redraw(*now)
-        {
+        if let Event::Window(window::Event::RedrawRequested(_)) = event {
             shell.request_redraw();
         }
 
         let mut inner = self.as_progress_bar();
 
-        <ProgressBar<'_, iced::Theme> as Widget<Message, iced::Theme, Renderer>>::update(
-            &mut inner, tree, event, layout, cursor, renderer, clipboard, shell, viewport,
-        );
+        <ProgressBar<'_, iced::Theme> as Widget<Message, iced::Theme, Renderer>>::update(&mut inner, tree, event, layout, cursor, renderer, clipboard, shell, viewport);
     }
 
     fn draw(&self, tree: &Tree, renderer: &mut Renderer, theme: &iced::Theme, style: &renderer::Style, // more pt 2!
     layout: Layout<'_>, cursor: mouse::Cursor, viewport: &Rectangle) {
-        <ProgressBar<'_, iced::Theme> as Widget<Message, iced::Theme, Renderer>>::draw(
-            &self.as_progress_bar(), tree, renderer, theme, style, layout, cursor, viewport,
-        );
+        <ProgressBar<'_, iced::Theme> as Widget<Message, iced::Theme, Renderer>>::draw(&self.as_progress_bar(), tree, renderer, theme, style, layout, cursor, viewport);
     }
 }
 
