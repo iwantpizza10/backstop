@@ -142,7 +142,7 @@ pub trait SongListItem {
 
     // todo: fix text wrapping/overlapping
 
-    /// leave this implementation as default unless needed
+    /// leave this implementation as default unless otherwise needed
     fn view(&self, assets: Rc<AppAssets>) -> Element<'_, EventMessage> {
         let mut col = column![];
 

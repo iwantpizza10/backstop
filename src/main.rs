@@ -4,10 +4,11 @@ use core::f32;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
+use std::time::Duration;
 use chrono::Utc;
 use iced::widget::image::Handle;
 use iced::widget::{column, row, text};
-use iced::{Alignment, Element, Event, Length, Size, Subscription, Task, Theme, event, window};
+use iced::{Alignment, Element, Event, Length, Size, Subscription, Task, Theme, event, time, window};
 
 mod discord_rpc;
 mod saved_state;
@@ -18,7 +19,6 @@ mod queue;
 mod menu_view;
 mod navbar;
 mod footer;
-mod updating_progress_bar;
 
 use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::discord_rpc::{DiscordRpc, DiscordRpcMode};
@@ -30,6 +30,8 @@ use crate::saved_state::SavedState;
 use crate::saved_state::media_cache::{Album, Artist, CacheFilterType, CacheSortType, MediaCache};
 use crate::saved_state::song_file_info::SongFileInfo;
 use crate::queue::Queue;
+
+// todo: make new sort types for track number or wtv and make that work in album view
 
 fn main() -> iced::Result {
     iced::application(BackstopApp::new, BackstopApp::update, BackstopApp::view)
@@ -52,6 +54,7 @@ enum PlayingState {
 enum EventMessage {
     DoNothing,
     WindowResize(Size),
+    UpdatePlaybackPosition,
 
     // app init stuff
     Loaded(Result<SavedState, BackstopError>),
@@ -198,6 +201,7 @@ impl BackstopApp {
                 match message {
                     EventMessage::DoNothing => {},
                     EventMessage::WindowResize(_) => {},
+                    EventMessage::UpdatePlaybackPosition => {},
 
                     // app init stuff
                     EventMessage::Loaded(state) => {
@@ -224,7 +228,9 @@ impl BackstopApp {
                     EventMessage::WindowResize(size) => {
                         state.items_per_row = (((size.width - 64.0) / 202.0) as i32).clamp(1, i32::MAX); // yes i would like 2147483647 songs per row thanks
                         //                       navbar width ^^      ^^^ item width + 10px (spacing)
-                    }
+                    },
+
+                    EventMessage::UpdatePlaybackPosition => {},
 
                     // library/index stuff
 
@@ -467,14 +473,17 @@ impl BackstopApp {
     }
 
     fn subscriptions(&self) -> Subscription<EventMessage> {
-        event::listen_with(|event, _, _| {
-            match event {
-                Event::Window(window::Event::Resized(size)) => {
-                    Some(EventMessage::WindowResize(size))
-                },
-                _ => None,
-            }
-        })
+        Subscription::batch(vec![
+            event::listen_with(|event, _, _| {
+                match event {
+                    Event::Window(window::Event::Resized(size)) => {
+                        Some(EventMessage::WindowResize(size))
+                    },
+                    _ => None,
+                }
+            }),
+            time::every(Duration::from_millis(125)).map(|_| EventMessage::UpdatePlaybackPosition),
+        ])
     }
 
     fn title(&self) -> String {

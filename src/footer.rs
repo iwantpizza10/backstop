@@ -1,7 +1,9 @@
 use std::time::Duration;
-use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, row, slider, svg, text}};
+use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, button, column, image::Handle, mouse_area, progress_bar, row, slider, svg, text}};
 
-use crate::{AppState, EventMessage, PlayingState, constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB}, menu_view::MenuView, updating_progress_bar::updating_progress_bar};
+use crate::{AppState, EventMessage, PlayingState};
+use crate::constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
+use crate::menu_view::MenuView;
 
 pub struct Footer {}
 
@@ -80,7 +82,7 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     column![
         row![
             text!("{}", timestamp_one),
-            updating_progress_bar(0.0..=state.player.get_duration().as_millis() as f32, || state.player.get_pos().as_millis() as f32)
+            progress_bar(0.0..=state.player.get_duration().as_millis() as f32, state.player.get_pos().as_millis() as f32)
                 .girth(8),
             text!("{}", timestamp_two),
         ]
