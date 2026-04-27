@@ -1,10 +1,10 @@
 use std::{rc::Rc, sync::Arc};
-use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, image::Handle, mouse_area, row, scrollable, space, text}};
+use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, container, image::Handle, mouse_area, row, scrollable, space, text}};
 use iced::widget::image as iced_image;
 
-use crate::{AppAssets, AppState, EventMessage, SongsViewType};
+use crate::{AppAssets, AppState, EventMessage, SongsViewType, clip};
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq)]
 pub enum MenuView {
     #[default]
     Welcome,
@@ -140,8 +140,6 @@ pub trait SongListItem {
         EventMessage::DoNothing
     }
 
-    // todo: fix text wrapping/overlapping
-
     /// leave this implementation as default unless otherwise needed
     fn view(&self, assets: Rc<AppAssets>) -> Element<'_, EventMessage> {
         let mut col = column![];
@@ -153,27 +151,27 @@ pub trait SongListItem {
         }.width(192));
 
         if let Some(txt) = self.textrow_one() {
-            col = col.push(text(txt)
+            col = col.push(clip!(text(txt)
                 .width(192)
                 .height(23.4) // default line height (1.3) * 18
-                .wrapping(text::Wrapping::WordOrGlyph)
-                .size(18))
+                .wrapping(text::Wrapping::None)
+                .size(18)))
         }
 
         if let Some(txt) = self.textrow_two() {
-            col = col.push(text(txt)
+            col = col.push(clip!(text(txt)
                 .width(192)
                 .height(15.6) // default line height (1.3) * 12
                 .wrapping(text::Wrapping::WordOrGlyph)
-                .size(12))
+                .size(12)))
         }
 
         if let Some(txt) = self.textrow_three() {
-            col = col.push(text(txt)
+            col = col.push(clip!(text(txt)
                 .width(192)
                 .height(15.6) // default line height (1.3) * 12
                 .wrapping(text::Wrapping::WordOrGlyph)
-                .size(12))
+                .size(12)))
         }
 
         mouse_area(col)

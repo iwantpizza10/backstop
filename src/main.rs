@@ -112,7 +112,7 @@ impl BackstopError {
     }
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq)]
 enum SongsViewType {
     #[default]
     All,

@@ -61,3 +61,10 @@ macro_rules! tooltip_gen {
             }), $c)
     };
 }
+
+#[macro_export(local_inner_macros)]
+macro_rules! clip {
+    ($a:expr) => {
+        iced::widget::container($a).clip(true)
+    };
+}
