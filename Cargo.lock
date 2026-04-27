@@ -409,6 +409,7 @@ dependencies = [
  "async-fs",
  "audiotags",
  "chrono",
+ "color-from-hex",
  "dirs",
  "discord-rich-presence",
  "iced",
@@ -722,6 +723,10 @@ dependencies = [
  "termcolor",
  "unicode-width",
 ]
+
+[[package]]
+name = "color-from-hex"
+version = "0.1.0"
 
 [[package]]
 name = "color_quant"

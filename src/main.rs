@@ -6,9 +6,11 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
 use chrono::Utc;
+use color_from_hex::color_from_hex;
+use iced::theme::Palette;
 use iced::widget::image::Handle;
 use iced::widget::{column, row, text};
-use iced::{Alignment, Element, Event, Length, Size, Subscription, Task, Theme, event, time, window};
+use iced::{Alignment, Color, Element, Event, Length, Size, Subscription, Task, Theme, event, time, window};
 
 mod discord_rpc;
 mod saved_state;
@@ -38,7 +40,7 @@ fn main() -> iced::Result {
         .subscription(BackstopApp::subscriptions)
         .title(BackstopApp::title)
         .theme(BackstopApp::theme)
-        .window_size((1366, 768))
+        .window_size((1290, 768))
         .run()
 }
 
@@ -491,6 +493,13 @@ impl BackstopApp {
     }
 
     fn theme(&self) -> Option<Theme> {
-        None
+        Some(Theme::custom("Backstop Theme", Palette {
+            background: color_from_hex!("#0b071b"),
+            text: color_from_hex!("#ffffff"),
+            primary: color_from_hex!("#4b0fa3"),
+            success: color_from_hex!("#7221ea"),
+            warning: Color::from_rgb8(255,255,255),
+            danger: Color::from_rgb8(255,255,255),
+        }))
     }
 }

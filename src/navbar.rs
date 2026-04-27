@@ -1,4 +1,5 @@
-use iced::{Background, Element, Length, Theme, alignment::Horizontal, border, widget::{button::{Status, Style}, column, space, svg::Handle}};
+use color_from_hex::color_from_hex;
+use iced::{Background, Color, Element, Length, Theme, alignment::Horizontal, border, widget::{button::{Status, Style}, column, container, space, svg::Handle}};
 use iced::widget::svg as svg_img;
 use iced::widget::button;
 
@@ -39,15 +40,19 @@ impl Navbar {
             space().width(56),
         ].spacing(8);
 
-        column![top_nav, bottom_nav]
-            .width(64)
-            .height(Length::Fill)
-            .align_x(Horizontal::Center)
+        container(column![top_nav, bottom_nav]
+                .width(64)
+                .height(Length::Fill)
+                .align_x(Horizontal::Center))
+            .style(|_| {
+                container::Style {
+                    background: Some(Background::Color(color_from_hex!("#110b29"))),
+                    ..container::Style::default()
+                }
+            })
             .into()
     }
 }
-
-// todo: colors
 
 // lowkey took this (& the next couple functions) from button::primary and made changes
 fn button_style_thing(theme: &Theme, status: Status, active: bool) -> Style {
