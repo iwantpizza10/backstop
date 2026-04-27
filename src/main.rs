@@ -232,7 +232,9 @@ impl BackstopApp {
                         //                       navbar width ^^      ^^^ item width + 10px (spacing)
                     },
 
-                    EventMessage::UpdatePlaybackPosition => {},
+                    EventMessage::UpdatePlaybackPosition => {
+                        // todo: check if song is over, go to next or replay song from there (based on repeat setting or wtv)
+                    },
 
                     // library/index stuff
 
@@ -381,8 +383,12 @@ impl BackstopApp {
                     EventMessage::ToggleShuffle => {
                         state.saved_state.settings.toggle_shuffle();
 
-                        if let Some(q) = &mut state.queue && state.saved_state.settings.get_shuffle() == false {
-                            q.unshuffle();
+                        if let Some(q) = &mut state.queue {
+                            if state.saved_state.settings.get_shuffle() {
+                                q.shuffle();
+                            } else {
+                                q.unshuffle();
+                            }
                         }
                     },
 

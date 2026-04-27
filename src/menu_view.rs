@@ -1,5 +1,5 @@
 use std::{rc::Rc, sync::Arc};
-use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, container, image::Handle, mouse_area, row, scrollable, space, text}};
+use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, image::Handle, mouse_area, row, scrollable, space, text}};
 use iced::widget::image as iced_image;
 
 use crate::{AppAssets, AppState, EventMessage, SongsViewType, clip};

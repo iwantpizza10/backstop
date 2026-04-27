@@ -54,7 +54,8 @@ impl Navbar {
     }
 }
 
-// lowkey took this (& the next couple functions) from button::primary and made changes
+// todo: combine these functions and footer.rs's make_button macro (maybe?) into an svg button thing
+
 fn button_style_thing(theme: &Theme, status: Status, active: bool) -> Style {
     let palette = theme.extended_palette();
     let base = Style {
