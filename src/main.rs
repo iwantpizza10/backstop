@@ -78,8 +78,6 @@ enum EventMessage {
 
     // song controls
     PlaySong(Arc<SongFileInfo>),
-    AppendToQueue(Arc<SongFileInfo>),
-    NextInQueue(Arc<SongFileInfo>),
     PrevTrack,
     NextTrack,
     PlayPause,
@@ -357,32 +355,69 @@ impl BackstopApp {
 
                     // song controls
 
-                    // todo: different queue behavior based on keyboard modifiers state
                     EventMessage::PlaySong(song) => {
-                        if let Err(err) = state.player.play_song(Arc::clone(&song)) {
-                            *self = BackstopApp::Error(err);
+                        let play_song_now;
+                        
+                        if state.keyboard_modifiers.command() {
+                            if state.keyboard_modifiers.shift() {
+                                // ctrl+shift+click - inserts song as next song in queue, makes new queue if needed
+
+                                if let Some(q) = &mut state.queue {
+                                    q.insert_next(Arc::clone(&song));
+                                    play_song_now = false;
+                                } else {
+                                    state.queue = Queue::from_vec(&vec![
+                                        Arc::clone(&song),
+                                    ], Arc::clone(&song));
+
+                                    play_song_now = true;
+                                }
+                            } else {
+                                // ctrl+click - inserts song as last song in queue, makes new queue if needed
+
+                                if let Some(q) = &mut state.queue {
+                                    q.append_song(Arc::clone(&song));
+                                    play_song_now = false;
+                                } else {
+                                    state.queue = Queue::from_vec(&vec![
+                                        Arc::clone(&song),
+                                    ], Arc::clone(&song));
+
+                                    play_song_now = true;
+                                }
+                            }
                         } else {
-                            state.playing = PlayingState::Playing;
+                            // click - plays song immediately, creating new queue from all visible items & shuffling if needed
+
                             state.queue = Queue::from_vec(state.saved_state.media_cache.songs(), Arc::clone(&song));
 
                             if let Some(queue) = &mut state.queue && state.saved_state.settings.get_shuffle() {
                                 queue.shuffle();
                             }
+                            
+                            play_song_now = true;
+                        }
+                        
+                        println!("1 -- {:?}", &state.queue);
+                        if play_song_now {
 
-                            let cur_song = CurrentSong {
-                                start_time: Utc::now(),
-                                file_info: song,
-                            };
+                            if let Err(err) = state.player.play_song(Arc::clone(&song)) {
+                                *self = BackstopApp::Error(err);
+                            } else {
+                                state.playing = PlayingState::Playing;
 
-                            state.current_song = Some(cur_song.clone());
-                            state.discord_rpc.update_playing_state(state.playing);
-                            state.discord_rpc.play_song(cur_song);
+                                let cur_song = CurrentSong {
+                                    start_time: Utc::now(),
+                                    file_info: song,
+                                };
+
+                                state.current_song = Some(cur_song.clone());
+                                state.discord_rpc.update_playing_state(state.playing);
+                                state.discord_rpc.play_song(cur_song);
+                            }
                         }
                     },
 
-                    // appendtoqueue
-                    // nextinqueue
-                    
                     EventMessage::NextTrack | EventMessage::PrevTrack => {
                         if let Some(q) = &mut state.queue && let Some(song) = match message {
                             EventMessage::NextTrack => {q.next_song()},

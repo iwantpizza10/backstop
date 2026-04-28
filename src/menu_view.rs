@@ -13,8 +13,6 @@ pub enum MenuView {
     Settings,
 }
 
-// todo: settings view
-
 impl MenuView {
     pub fn view<'a>(&self, state: &'a AppState) -> Element<'a, EventMessage> {
         let assets = Rc::clone(&state.assets);
@@ -85,7 +83,7 @@ impl MenuView {
                 ]
             },
 
-            MenuView::CoverArtView => {
+            Self::CoverArtView => {
                 if let Some(cur_song) = &state.current_song {
                     let cover_path = cur_song.file_info.cover.as_ref().unwrap().to_string_lossy().to_string();
 
@@ -120,9 +118,9 @@ impl MenuView {
                 }
             },
 
-            x => {
-                todo!("{x:?}");
-            },
+            Self::Settings => {
+                todo!("Settings") // view
+            }
         }.into()
     }
 }

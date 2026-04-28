@@ -12,7 +12,9 @@ pub struct CurrentSong {
 
 pub struct Player {
     pub audio_player: Rc<rodio::Player>,
-    device: Rc<MixerDeviceSink>,
+    // unused because unused but kept to prevent it from
+    // being dropped cause it'd stop playing sound
+    _device: Rc<MixerDeviceSink>,
     current_duration: Option<Duration>,
 }
 
@@ -30,7 +32,7 @@ impl Player {
 
         let instance = Self {
             audio_player: Rc::new(rodio::Player::connect_new(&device.mixer())),
-            device: Rc::new(device),
+            _device: Rc::new(device),
             current_duration: None,
         };
 
