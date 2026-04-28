@@ -7,11 +7,12 @@ use std::sync::Arc;
 use std::time::Duration;
 use chrono::Utc;
 use color_from_hex::color_from_hex;
+use iced::alignment::Horizontal;
 use iced::keyboard::Modifiers;
 use iced::theme::Palette;
 use iced::widget::image::Handle;
-use iced::widget::{column, row, text};
-use iced::{Alignment, Color, Element, Event, Length, Size, Subscription, Task, Theme, event, keyboard, time, window};
+use iced::widget::{center, column, container, mouse_area, opaque, row, space, stack, text};
+use iced::{Alignment, Border, Color, Element, Event, Length, Shadow, Size, Subscription, Task, Theme, event, keyboard, time, window};
 
 mod discord_rpc;
 mod saved_state;
@@ -27,7 +28,7 @@ mod svg_button;
 use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::discord_rpc::{DiscordRpc, DiscordRpcMode};
 use crate::footer::Footer;
-use crate::menu_view::MenuView;
+use crate::menu_view::{MenuView, SongListItem};
 use crate::navbar::Navbar;
 use crate::player::{CurrentSong, Player};
 use crate::saved_state::SavedState;
@@ -398,7 +399,6 @@ impl BackstopApp {
                             play_song_now = true;
                         }
                         
-                        println!("1 -- {:?}", &state.queue);
                         if play_song_now {
 
                             if let Err(err) = state.player.play_song(Arc::clone(&song)) {
@@ -538,13 +538,60 @@ impl BackstopApp {
                     .size(36)
             },
             BackstopApp::Loaded(state) => {
-                return column![
+                let content = column![
                     row![
                         Navbar::view(state),
                         state.menu_view.view(state)
                     ],
                     Footer::view(state),
-                ].into()
+                ];
+
+                if state.peeking_queue {
+                    let mut content_col = column![
+                        text("Queue (Next 3)")
+                            .size(36),
+                        space().height(4)
+                    ].spacing(4)
+                    .align_x(Horizontal::Center);
+
+                    if let Some(q) = &state.queue {
+                        let peek = q.peek()
+                            .iter()
+                            .filter(|x| if let Some(_) = x { true } else { false })
+                            .map(|x| x.clone().expect("these had better be some"))
+                            .collect::<Vec<_>>();
+
+                        for i in peek {
+                            content_col = content_col.push(text!("{} - {}", i.artist(), i.title()));
+                        }
+                    }
+
+                    return stack![
+                        content,
+                        opaque(
+                            mouse_area(center(container(content_col).style(|_| {
+                                container::Style {
+                                    text_color: Some(Color::WHITE),
+                                    background: Some(color_from_hex!("#170f37").into()),
+                                    border: Border::default().color(Color::WHITE).width(1).rounded(15),
+                                    shadow: Shadow::default(),
+                                    snap: false,
+                                }
+                            }).padding(16)).style(|_| {
+                                container::Style {
+                                    background: Some(Color {
+                                        a: 0.75,
+                                        ..Color::BLACK
+                                    }.into()),
+                                    ..container::Style::default()
+                                }
+                            }))
+                            .on_press(EventMessage::ToggleQueuePeek)
+                        )
+                    ].into();
+                } else {
+                    return content.into();
+                }
             },
             BackstopApp::Error(error) => {
                 text!("An error occurred {}!", error.when())
