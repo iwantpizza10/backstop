@@ -22,6 +22,7 @@ mod queue;
 mod menu_view;
 mod navbar;
 mod footer;
+mod svg_button;
 
 use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::discord_rpc::{DiscordRpc, DiscordRpcMode};
@@ -294,8 +295,8 @@ impl BackstopApp {
                         });
                     },
 
-                    // todo: triggerremovemediadir
-                    // todo: removemediadir
+                    // triggerremovemediadir
+                    //  removemediadir
 
                     EventMessage::TriggerRescanLibrary => {
                         let dirs = state.saved_state.settings.get_media_directories();
@@ -316,25 +317,23 @@ impl BackstopApp {
                     },
 
                     EventMessage::ChangeViewType(view) => {
-                        if let MenuView::SongsView(_) = state.menu_view {
-                            if let SongsViewType::Artist(artist) = &view {
-                                let artist = Arc::clone(&artist);
+                        if let SongsViewType::Artist(artist) = &view {
+                            let artist = Arc::clone(&artist);
 
-                                state.saved_state.media_cache.filter(CacheFilterType::Artist(artist));
-                            }
-
-                            if let SongsViewType::Album(album) = &view {
-                                let album = Arc::clone(&album);
-
-                                state.saved_state.media_cache.filter(CacheFilterType::Album(album));
-                            }
-
-                            if let SongsViewType::All = &view {
-                                state.saved_state.media_cache.filter(CacheFilterType::None);
-                            }
-
-                            state.menu_view = MenuView::SongsView(view);
+                            state.saved_state.media_cache.filter(CacheFilterType::Artist(artist));
                         }
+
+                        if let SongsViewType::Album(album) = &view {
+                            let album = Arc::clone(&album);
+
+                            state.saved_state.media_cache.filter(CacheFilterType::Album(album));
+                        }
+
+                        if let SongsViewType::All = &view {
+                            state.saved_state.media_cache.filter(CacheFilterType::None);
+                        }
+
+                        state.menu_view = MenuView::SongsView(view);
                     },
 
                     EventMessage::ToggleSortType => {
@@ -381,8 +380,8 @@ impl BackstopApp {
                         }
                     },
 
-                    // todo: appendtoqueue
-                    // todo: nextinqueue
+                    // appendtoqueue
+                    // nextinqueue
                     
                     EventMessage::NextTrack | EventMessage::PrevTrack => {
                         if let Some(q) = &mut state.queue && let Some(song) = match message {
@@ -472,9 +471,9 @@ impl BackstopApp {
                     EventMessage::ClearDiscordRpc => {
                         let _ = state.discord_rpc.clear_rpc();
                     },
-                    // todo: setdiscordrpcmode
-                    // todo: removerpclistentry
-                    // todo: addrpclistentry
+                    // setdiscordrpcmode
+                    // removerpclistentry
+                    // addrpclistentry
 
                     x => {
                         todo!("event {:?} in context {}", x, "BackstopApp::Loaded")

@@ -1,10 +1,12 @@
 use std::time::Duration;
 use color_from_hex::color_from_hex;
-use iced::{Background, Color, Element, Length, Theme, alignment::{Horizontal, Vertical}, border, widget::{Column, Image, Row, button, button::{Status, Style}, column, container, image::Handle, mouse_area, progress_bar, row, slider, space, svg, text}};
+use iced::{Background, Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, column, container, image::Handle, mouse_area, progress_bar, row, slider, space, text}};
 
 use crate::{AppState, EventMessage, PlayingState};
 use crate::constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::menu_view::MenuView;
+use crate::svg_button::button_style;
+use crate::make_svg_button;
 
 pub struct Footer {}
 
@@ -78,17 +80,6 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     let timestamp_one = duration_to_string(state.player.get_pos());
     let timestamp_two = duration_to_string(state.player.get_duration());
 
-    macro_rules! make_button {
-        ($path:expr, $evt:expr) => {
-            button(svg(svg::Handle::from_memory(include_bytes!($path)))
-                    .width(48)
-                    .height(48))
-                .width(48)
-                .height(48)
-                .on_press($evt)
-        };
-    }
-
     column![
         row![
             text!("{}", timestamp_one),
@@ -99,24 +90,24 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
             .spacing(16)
             .align_y(Vertical::Center),
         row![
-            make_button!("../assets/icons/eraser.svg", EventMessage::ClearDiscordRpc)
-                .style(|a, b| button_style_thing(a, b, false)),
-            make_button!("../assets/icons/shuffle.svg", EventMessage::ToggleShuffle)
-                .style(|a, b| button_style_thing(a, b, state.saved_state.settings.get_shuffle())),
-            make_button!("../assets/icons/arrow-big-left-dash.svg", EventMessage::PrevTrack)
-                .style(|a, b| button_style_thing(a, b, false)),
+            make_svg_button!(include_bytes!("../assets/icons/eraser.svg"), EventMessage::ClearDiscordRpc, 48)
+                .style(|a, b| button_style(a, b, false)),
+            make_svg_button!(include_bytes!("../assets/icons/shuffle.svg"), EventMessage::ToggleShuffle, 48)
+                .style(|a, b| button_style(a, b, state.saved_state.settings.get_shuffle())),
+            make_svg_button!(include_bytes!("../assets/icons/arrow-big-left-dash.svg"), EventMessage::PrevTrack, 48)
+                .style(|a, b| button_style(a, b, false)),
             if state.playing == PlayingState::Playing {
-                make_button!("../assets/icons/pause.svg", EventMessage::PlayPause)
+                make_svg_button!(include_bytes!("../assets/icons/pause.svg"), EventMessage::PlayPause, 48)
             } else {
-                make_button!("../assets/icons/play.svg", EventMessage::PlayPause)
+                make_svg_button!(include_bytes!("../assets/icons/play.svg"), EventMessage::PlayPause, 48)
             }
-                .style(|a, b| button_style_thing(a, b, false)),
-            make_button!("../assets/icons/arrow-big-right-dash.svg", EventMessage::NextTrack)
-                .style(|a, b| button_style_thing(a, b, false)),
-            make_button!("../assets/icons/repeat.svg", EventMessage::ToggleRepeat)
-                .style(|a, b| button_style_thing(a, b, state.saved_state.settings.get_repeat())),
-            make_button!("../assets/icons/list-plus.svg", EventMessage::ToggleQueuePeek)
-                .style(|a, b| button_style_thing(a, b, state.peeking_queue)),
+                .style(|a, b| button_style(a, b, false)),
+            make_svg_button!(include_bytes!("../assets/icons/arrow-big-right-dash.svg"), EventMessage::NextTrack, 48)
+                .style(|a, b| button_style(a, b, false)),
+            make_svg_button!(include_bytes!("../assets/icons/repeat.svg"), EventMessage::ToggleRepeat, 48)
+                .style(|a, b| button_style(a, b, state.saved_state.settings.get_repeat())),
+            make_svg_button!(include_bytes!("../assets/icons/list-plus.svg"), EventMessage::ToggleQueuePeek, 48)
+                .style(|a, b| button_style(a, b, state.peeking_queue)),
         ]
             .spacing(8),
     ]
@@ -148,41 +139,4 @@ fn duration_to_string(dur: Duration) -> String {
     let seconds = dur.as_secs() - (minutes * 60);
 
     format!("{:02}:{:02}", minutes, seconds)
-}
-
-fn button_style_thing(theme: &Theme, status: Status, active: bool) -> Style {
-    let palette = theme.extended_palette();
-    let base = Style {
-        background: if active {
-            Some(Background::Color(palette.success.base.color))
-        } else {
-            Some(Background::Color(palette.primary.base.color))
-        },
-        text_color: palette.primary.base.text,
-        border: border::rounded(10),
-        ..Style::default()
-    };
-
-    match status {
-        Status::Active | Status::Pressed => base,
-        Status::Hovered => Style {
-            background: if active {
-                Some(Background::Color(palette.success.strong.color))
-            } else {
-                Some(Background::Color(palette.primary.strong.color))
-            },
-            ..base
-        },
-        Status::Disabled => disabled(base),
-    }
-}
-
-fn disabled(style: Style) -> Style {
-    Style {
-        background: style
-            .background
-            .map(|background| background.scale_alpha(0.5)),
-        text_color: style.text_color.scale_alpha(0.5),
-        ..style
-    }
 }

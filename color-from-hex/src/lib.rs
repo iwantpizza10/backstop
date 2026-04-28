@@ -23,5 +23,5 @@ pub fn color_from_hex(input: TokenStream) -> TokenStream {
     let g = u8::from_str_radix(&input[2..4], 16).unwrap();
     let b = u8::from_str_radix(&input[4..6], 16).unwrap();
 
-    format!("Color::from_rgb8({r}, {g}, {b})").parse().unwrap()
+    format!("iced::Color::from_rgb8({r}, {g}, {b})").parse().unwrap()
 }
