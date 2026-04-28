@@ -28,7 +28,7 @@ mod svg_button;
 use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::discord_rpc::{DiscordRpc, DiscordRpcMode};
 use crate::footer::Footer;
-use crate::menu_view::{MenuView, SongListItem};
+use crate::menu_view::MenuView;
 use crate::navbar::Navbar;
 use crate::player::{CurrentSong, Player};
 use crate::saved_state::SavedState;

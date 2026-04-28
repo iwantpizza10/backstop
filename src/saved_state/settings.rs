@@ -141,16 +141,6 @@ impl BackstopSettings {
         self.first_launch
     }
 
-    /// returns timestamp of when the media cache was last indexed
-    pub fn get_cache_last_updated(&self) -> DateTime<Utc> {
-        self.cache_last_updated
-    }
-
-    /// sets timestamp of when media cache was last indexed
-    pub fn set_cache_last_updated(&mut self, time: DateTime<Utc>) {
-        self.cache_last_updated = time;
-    }
-
     /// returns a vector of media directories to index
     pub fn get_media_directories(&self) -> Vec<PathBuf> {
         self.media_directories.iter().map(PathBuf::clone).collect()

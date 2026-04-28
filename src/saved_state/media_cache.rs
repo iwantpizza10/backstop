@@ -170,11 +170,6 @@ impl MediaCache {
         Ok(())
     }
 
-    /// creates a new, empty media cache
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// creates a media cache from a hashset
     fn from_apparent(set: HashSet<Arc<SongFileInfo>>) -> Self {
         let mut instance = Self {
