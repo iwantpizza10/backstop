@@ -6,7 +6,6 @@ use crate::{BackstopError, saved_state::song_file_info::SongFileInfo};
 
 #[derive(Debug, Clone)]
 pub struct CurrentSong {
-    pub duration: Duration,
     pub start_time: DateTime<Utc>,
     pub file_info: Arc<SongFileInfo>,
 }

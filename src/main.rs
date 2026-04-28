@@ -7,10 +7,11 @@ use std::sync::Arc;
 use std::time::Duration;
 use chrono::Utc;
 use color_from_hex::color_from_hex;
+use iced::keyboard::Modifiers;
 use iced::theme::Palette;
 use iced::widget::image::Handle;
 use iced::widget::{column, row, text};
-use iced::{Alignment, Color, Element, Event, Length, Size, Subscription, Task, Theme, event, time, window};
+use iced::{Alignment, Color, Element, Event, Length, Size, Subscription, Task, Theme, event, keyboard, time, window};
 
 mod discord_rpc;
 mod saved_state;
@@ -33,8 +34,6 @@ use crate::saved_state::media_cache::{Album, Artist, CacheFilterType, CacheSortT
 use crate::saved_state::song_file_info::SongFileInfo;
 use crate::queue::Queue;
 
-// todo: make new sort types for track number or wtv and make that work in album view
-
 fn main() -> iced::Result {
     iced::application(BackstopApp::new, BackstopApp::update, BackstopApp::view)
         .subscription(BackstopApp::subscriptions)
@@ -56,6 +55,7 @@ enum PlayingState {
 enum EventMessage {
     DoNothing,
     WindowResize(Size),
+    KeyboardModifiersChanged(Modifiers),
     UpdatePlaybackPosition,
 
     // app init stuff
@@ -152,6 +152,7 @@ struct AppState {
     items_per_row: i32,
     sort_type: CacheSortType,
     peeking_queue: bool,
+    keyboard_modifiers: Modifiers,
 }
 
 impl TryFrom<SavedState> for AppState {
@@ -174,6 +175,7 @@ impl TryFrom<SavedState> for AppState {
                 items_per_row: 1,
                 sort_type: CacheSortType::default(),
                 peeking_queue: false,
+                keyboard_modifiers: Modifiers::NONE,
             })
         } else {
             Err(BackstopError::LoadingError)
@@ -203,6 +205,7 @@ impl BackstopApp {
                 match message {
                     EventMessage::DoNothing => {},
                     EventMessage::WindowResize(_) => {},
+                    EventMessage::KeyboardModifiersChanged(_) => {},
                     EventMessage::UpdatePlaybackPosition => {},
 
                     // app init stuff
@@ -232,6 +235,10 @@ impl BackstopApp {
                         //                       navbar width ^^      ^^^ item width + 10px (spacing)
                     },
 
+                    EventMessage::KeyboardModifiersChanged(mods) => {
+                        state.keyboard_modifiers = mods;
+                    },
+
                     EventMessage::UpdatePlaybackPosition => {
                         if state.player.song_done_or_empty() {
                             let song;
@@ -255,7 +262,6 @@ impl BackstopApp {
                                     state.playing = PlayingState::Playing;
 
                                     let cur_song = CurrentSong {
-                                        duration: state.player.get_duration(),
                                         start_time: Utc::now(),
                                         file_info: song,
                                     };
@@ -332,12 +338,18 @@ impl BackstopApp {
                     },
 
                     EventMessage::ToggleSortType => {
-                        state.sort_type = match state.sort_type {
-                            CacheSortType::ArtistAlphabetical => CacheSortType::TitleAlphabetical,
-                            CacheSortType::TitleAlphabetical => CacheSortType::ArtistAlphabetical,
-                        };
+                        if let MenuView::SongsView(SongsViewType::Album(_)) = state.menu_view {
+                            // not sorting anything here because it's in order by track number
+                            // i feel like that makes most sense to have as an immutable thing
+                            // + i don't feel like making other sorting work there :)
+                        } else {
+                            state.sort_type = match state.sort_type {
+                                CacheSortType::ArtistAlphabetical => CacheSortType::TitleAlphabetical,
+                                CacheSortType::TitleAlphabetical => CacheSortType::ArtistAlphabetical,
+                            };
 
-                        state.saved_state.media_cache.sort(state.sort_type.clone());
+                            state.saved_state.media_cache.sort(state.sort_type.clone());
+                        }
                     },
 
                     EventMessage::ToggleQueuePeek => {
@@ -346,6 +358,7 @@ impl BackstopApp {
 
                     // song controls
 
+                    // todo: different queue behavior based on keyboard modifiers state
                     EventMessage::PlaySong(song) => {
                         if let Err(err) = state.player.play_song(Arc::clone(&song)) {
                             *self = BackstopApp::Error(err);
@@ -358,7 +371,6 @@ impl BackstopApp {
                             }
 
                             let cur_song = CurrentSong {
-                                duration: state.player.get_duration(),
                                 start_time: Utc::now(),
                                 file_info: song,
                             };
@@ -384,7 +396,6 @@ impl BackstopApp {
                                 state.playing = PlayingState::Playing;
 
                                 let cur_song = CurrentSong {
-                                    duration: state.player.get_duration(),
                                     start_time: Utc::now(),
                                     file_info: song,
                                 };
@@ -518,6 +529,9 @@ impl BackstopApp {
                 match event {
                     Event::Window(window::Event::Resized(size)) => {
                         Some(EventMessage::WindowResize(size))
+                    },
+                    Event::Keyboard(keyboard::Event::ModifiersChanged(mods)) => {
+                        Some(EventMessage::KeyboardModifiersChanged(mods))
                     },
                     _ => None,
                 }
