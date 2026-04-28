@@ -77,6 +77,10 @@ impl Player {
         self.current_duration.unwrap_or(Duration::ZERO)
     }
 
+    pub fn song_done_or_empty(&self) -> bool {
+        self.audio_player.empty()
+    }
+
     /// pauses playing song
     pub fn pause(&mut self) {
         self.audio_player.pause();

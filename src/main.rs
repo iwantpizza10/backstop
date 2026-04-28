@@ -233,7 +233,39 @@ impl BackstopApp {
                     },
 
                     EventMessage::UpdatePlaybackPosition => {
-                        // todo: check if song is over, go to next or replay song from there (based on repeat setting or wtv)
+                        if state.player.song_done_or_empty() {
+                            let song;
+
+                            if state.saved_state.settings.get_repeat() && let Some(cur) = &state.current_song {
+                                song = Some(Arc::clone(&cur.file_info));
+                            } else if let Some(q) = &mut state.queue {
+                                if let Some(sog) = q.next_song() {
+                                    song = Some(sog);
+                                } else {
+                                    song = None;
+                                }
+                            } else {
+                                song = None
+                            }
+
+                            if let Some(song) = song {
+                                if let Err(err) = state.player.play_song(Arc::clone(&song)) {
+                                    *self = BackstopApp::Error(err);
+                                } else {
+                                    state.playing = PlayingState::Playing;
+
+                                    let cur_song = CurrentSong {
+                                        duration: state.player.get_duration(),
+                                        start_time: Utc::now(),
+                                        file_info: song,
+                                    };
+
+                                    state.current_song = Some(cur_song.clone());
+                                    state.discord_rpc.update_playing_state(state.playing);
+                                    state.discord_rpc.play_song(cur_song);
+                                }
+                            }
+                        }
                     },
 
                     // library/index stuff
