@@ -1,5 +1,5 @@
 use std::{rc::Rc, sync::Arc};
-use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, image::Handle, mouse_area, row, scrollable, space, text}};
+use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, image::Handle, image as img, mouse_area, row, scrollable, space, text}};
 use iced::widget::image as iced_image;
 
 use crate::{AppAssets, AppState, EventMessage, SongsViewType, clip};
@@ -12,6 +12,8 @@ pub enum MenuView {
     CoverArtView,
     Settings,
 }
+
+// todo: settings view
 
 impl MenuView {
     pub fn view<'a>(&self, state: &'a AppState) -> Element<'a, EventMessage> {
@@ -81,6 +83,41 @@ impl MenuView {
                         .align_x(Horizontal::Center)
                         .spacing(16))
                 ]
+            },
+
+            MenuView::CoverArtView => {
+                if let Some(cur_song) = &state.current_song {
+                    let cover_path = cur_song.file_info.cover.as_ref().unwrap().to_string_lossy().to_string();
+
+                    let mut col = column![
+                        img(cover_path).height(384).width(384),
+                        space().height(16),
+                        text(cur_song.file_info.title())
+                            .size(36),
+                    ];
+
+                    col = col.push(space().height(4));
+
+                    if let Some(line) = cur_song.file_info.album_line() {
+                        col = col.push(text(line)
+                            .size(18));
+                    }
+
+                    col = col.push(text(cur_song.file_info.artist())
+                        .size(18));
+                    
+                    row![
+                        col
+                            .align_x(Horizontal::Center)
+                            .width(Length::Fill),
+                    ]
+                        .align_y(Vertical::Center)
+                        .height(Length::Fill)
+                } else {
+                    row![
+                        text("how did we get here?"),
+                    ]
+                }
             },
 
             x => {

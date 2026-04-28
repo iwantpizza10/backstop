@@ -128,11 +128,11 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
 fn right_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     row![
         column![
-            text!("Vol: {}dB", state.saved_state.settings.get_volume_db()),
+            text!("Gain: {}dB", state.saved_state.settings.get_volume_db()),
             slider(0..=VOLUME_DYNAMIC_RANGE_DB, state.saved_state.settings.get_volume_step(), EventMessage::SetVolume)
                 .width(128),
             space().height(8),
-            text!("Spd: {}x", state.saved_state.settings.get_speed()),
+            text!("Speed: {}x", state.saved_state.settings.get_speed()),
             slider(1..=SPEED_STEPS, state.saved_state.settings.get_speed_step(), EventMessage::SetSpeed)
                 .default(SPEED_STEPS / 2)
                 .width(128),

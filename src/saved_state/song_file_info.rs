@@ -123,6 +123,18 @@ impl SongFileInfo {
             return "Unknown Title".to_string();
         }
     }
+
+    pub fn album_line(&self) -> Option<String> {
+        if let Some(album) = &self.album {
+            if let Some(track) = &self.track_number {
+                return Some(format!("{album} #{track}"));
+            } else {
+                return Some(album.clone());
+            }
+        }
+
+        None
+    }
 }
 
 impl SongListItem for SongFileInfo {
@@ -139,15 +151,7 @@ impl SongListItem for SongFileInfo {
     }
 
     fn textrow_two<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
-        if let Some(album) = &self.album {
-            if let Some(track) = &self.track_number {
-                return Some(format!("{album} #{track}"));
-            } else {
-                return Some(album.clone());
-            }
-        }
-
-        None
+        self.album_line()
     }
 
     fn textrow_three<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
