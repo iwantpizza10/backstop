@@ -11,7 +11,7 @@ use iced::alignment::Horizontal;
 use iced::keyboard::Modifiers;
 use iced::theme::Palette;
 use iced::widget::image::Handle;
-use iced::widget::{center, column, container, mouse_area, opaque, row, space, stack, text};
+use iced::widget::{button, center, column, container, mouse_area, opaque, row, space, stack, text};
 use iced::{Alignment, Border, Color, Element, Event, Length, Shadow, Size, Subscription, Task, Theme, event, keyboard, time, window};
 
 mod discord_rpc;
@@ -33,6 +33,7 @@ use crate::navbar::Navbar;
 use crate::player::{CurrentSong, Player};
 use crate::saved_state::SavedState;
 use crate::saved_state::media_cache::{Album, Artist, CacheFilterType, CacheSortType, MediaCache};
+use crate::saved_state::settings::BackstopSettings;
 use crate::saved_state::song_file_info::SongFileInfo;
 use crate::queue::Queue;
 
@@ -61,6 +62,8 @@ enum EventMessage {
     KeyboardModifiersChanged(Modifiers),
     UpdatePlaybackPosition,
     UpdateRPCTextInput(String),
+    ClearCache,
+    ClearSettings,
 
     // app init stuff
     Loaded(Result<SavedState, BackstopError>),
@@ -223,6 +226,14 @@ impl BackstopApp {
                         return Task::done(EventMessage::WindowResize(Size { width: 1366.0, height: 768.0 }))
                     },
 
+                    EventMessage::ClearCache => {
+                        let _ = MediaCache::unsave();
+                    },
+
+                    EventMessage::ClearSettings => {
+                        let _ = BackstopSettings::unsave();
+                    },
+
                     x => {
                         unimplemented!("event {:?} in context {}", x, "BackstopApp::Loading")
                     },
@@ -347,6 +358,7 @@ impl BackstopApp {
 
                         if let SongsViewType::All = &view {
                             state.saved_state.media_cache.filter(CacheFilterType::None);
+                            state.saved_state.media_cache.sort(state.sort_type);
                         }
 
                         state.menu_view = MenuView::SongsView(view);
@@ -517,6 +529,7 @@ impl BackstopApp {
                         let _ = state.discord_rpc.clear_rpc();
                         state.queue = None;
                         state.current_song = None;
+                        state.playing = PlayingState::NotPlaying;
                         state.player.clear();
                     },
 
@@ -571,6 +584,14 @@ impl BackstopApp {
                 match message {
                     EventMessage::WindowResize(_) => {},
 
+                    EventMessage::ClearCache => {
+                        let _ = MediaCache::unsave();
+                    },
+
+                    EventMessage::ClearSettings => {
+                        let _ = BackstopSettings::unsave();
+                    },
+
                     x => unimplemented!("event {:?} in context {}", x, format!("BackstopApp::Error({:?})", err)),
                 }
             },
@@ -582,12 +603,29 @@ impl BackstopApp {
     fn view(&self) -> Element<'_, EventMessage> {
         match self {
             BackstopApp::Loading => {
-                text("Loading...")
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .align_x(Alignment::Center)
-                    .align_y(Alignment::Center)
-                    .size(36)
+                return column![
+                    text("Loading...")
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .align_x(Alignment::Center)
+                        .align_y(Alignment::Center)
+                        .size(36),
+                    text("Taking a while? Consider clearing cache or settings.")
+                        .width(Length::Fill)
+                        .align_x(Alignment::Center),
+                    space().height(8),
+                    row![
+                        space().width(Length::Fill),
+                        button("Clear Cache")
+                            .on_press(EventMessage::ClearCache),
+                        button("Clear Settings")
+                            .on_press(EventMessage::ClearSettings),
+                        space().width(Length::Fill),
+                    ]
+                        .spacing(8)
+                        .width(Length::Fill),
+                    space().height(16),
+                ].into();
             },
             BackstopApp::Loaded(state) => {
                 let content = column![
@@ -645,14 +683,31 @@ impl BackstopApp {
                 }
             },
             BackstopApp::Error(error) => {
-                text!("An error occurred {}!", error.when())
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .align_x(Alignment::Center)
-                    .align_y(Alignment::Center)
-                    .size(36)
+                return column![
+                    text!("An error occurred {}!", error.when())
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .align_x(Alignment::Center)
+                        .align_y(Alignment::Center)
+                        .size(36),
+                    text("Just updated? Consider clearing cache or settings.")
+                        .width(Length::Fill)
+                        .align_x(Alignment::Center),
+                    space().height(8),
+                    row![
+                        space().width(Length::Fill),
+                        button("Clear Cache")
+                            .on_press(EventMessage::ClearCache),
+                        button("Clear Settings")
+                            .on_press(EventMessage::ClearSettings),
+                        space().width(Length::Fill),
+                    ]
+                        .spacing(8)
+                        .width(Length::Fill),
+                    space().height(16),
+                ].into();
             },
-        }.into()
+        };
     }
 
     fn subscriptions(&self) -> Subscription<EventMessage> {

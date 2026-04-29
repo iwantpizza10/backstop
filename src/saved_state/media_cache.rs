@@ -14,7 +14,7 @@ use crate::menu_view::SongListItem;
 use crate::{EventMessage, SongsViewType, constants, softunwrap_str};
 use crate::saved_state::song_file_info::SongFileInfo;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum CacheSortType {
     TitleAlphabetical,
     #[default]
@@ -158,6 +158,15 @@ impl MediaCache {
 
         let serialized = serde_binary::to_vec(&self.songs, Endian::Little)?;
         fs::write(path, serialized)?;
+
+        Ok(())
+    }
+
+    pub fn unsave() -> Result<(), io::Error> {
+        let mut path = constants::conf_dir();
+        path.push("media_cache.bin");
+
+        std::fs::remove_file(path)?;
 
         Ok(())
     }

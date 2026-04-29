@@ -1,4 +1,4 @@
-use std::io::ErrorKind;
+use std::io::{self, ErrorKind};
 use std::{collections::HashSet, error::Error, fs, path::PathBuf};
 use chrono::{DateTime, Utc};
 use iced::time;
@@ -66,6 +66,15 @@ impl BackstopSettings {
         fs::write(path, serialized)?;
 
         tokio::time::sleep(time::milliseconds(500)).await;
+
+        Ok(())
+    }
+
+    pub fn unsave() -> Result<(), io::Error> {
+        let mut path = constants::conf_dir();
+        path.push("settings.bin");
+
+        std::fs::remove_file(path)?;
 
         Ok(())
     }
