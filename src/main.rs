@@ -12,6 +12,7 @@ use iced::keyboard::Modifiers;
 use iced::theme::Palette;
 use iced::widget::image::Handle;
 use iced::widget::{button, center, column, container, mouse_area, opaque, row, space, stack, text};
+use iced::window::icon;
 use iced::{Alignment, Border, Color, Element, Event, Length, Shadow, Size, Subscription, Task, Theme, event, keyboard, time, window};
 
 mod discord_rpc;
@@ -39,6 +40,11 @@ use crate::queue::Queue;
 
 fn main() -> iced::Result {
     iced::application(BackstopApp::new, BackstopApp::update, BackstopApp::view)
+        .window(window::Settings {
+            icon: Some(icon::from_file_data(include_bytes!("../assets/backstopshort_square.png"), Some(image::ImageFormat::Png))
+                .expect("icon should load properly")),
+            ..Default::default()
+        })
         .subscription(BackstopApp::subscriptions)
         .title(BackstopApp::title)
         .theme(BackstopApp::theme)
@@ -583,6 +589,8 @@ impl BackstopApp {
             Self::Error(err) => {
                 match message {
                     EventMessage::WindowResize(_) => {},
+                    EventMessage::KeyboardModifiersChanged(_) => {},
+                    EventMessage::UpdatePlaybackPosition => {},
 
                     EventMessage::ClearCache => {
                         let _ = MediaCache::unsave();
@@ -728,6 +736,14 @@ impl BackstopApp {
     }
 
     fn title(&self) -> String {
+        if let Self::Loaded(state) = self && let Some(song) = &state.current_song {
+            if state.playing == PlayingState::Playing {
+                return format!("{} - {} | Backstop", song.file_info.artist(), song.file_info.title());
+            } else if state.playing == PlayingState::Paused {
+                return format!("{} - {} (paused) | Backstop", song.file_info.artist(), song.file_info.title());
+            }
+        }
+
         "Backstop".to_string()
     }
 

@@ -64,9 +64,12 @@ impl DiscordRpc {
             playing_state,
             rpc_client: if settings.get_rpc_mode() != DiscordRpcMode::Disabled {
                     let mut client = DiscordIpcClient::new(DISCORD_APP_ID);
-                    client.connect()?;
 
-                    Some(client)
+                    if let Err(_) = client.connect() {
+                        None
+                    } else {
+                        Some(client)
+                    }
                 } else { None },
         })
     }
