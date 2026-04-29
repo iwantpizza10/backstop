@@ -301,8 +301,19 @@ impl BackstopApp {
                         });
                     },
 
-                    // triggerremovemediadir
-                    //  removemediadir
+                    EventMessage::RemoveMediaDir(dir) => {
+                        let Ok(dir) = dir.parse();
+
+                        state.saved_state.settings.remove_media_directory(&dir);
+
+                        let settings_two = state.saved_state.settings.clone();
+
+                        return Task::future(async move {
+                            let _ = settings_two.clone().save().await;
+
+                            EventMessage::DoNothing
+                        });
+                    }
 
                     EventMessage::TriggerRescanLibrary => {
                         let dirs = state.saved_state.settings.get_media_directories().clone();
