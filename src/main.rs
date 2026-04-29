@@ -381,7 +381,7 @@ impl BackstopApp {
                                 CacheSortType::TitleAlphabetical => CacheSortType::ArtistAlphabetical,
                             };
 
-                            state.saved_state.media_cache.sort(state.sort_type.clone());
+                            state.saved_state.media_cache.sort(state.sort_type);
                         }
                     },
 
@@ -611,7 +611,7 @@ impl BackstopApp {
     fn view(&self) -> Element<'_, EventMessage> {
         match self {
             BackstopApp::Loading => {
-                return column![
+                column![
                     text("Loading...")
                         .width(Length::Fill)
                         .height(Length::Fill)
@@ -633,7 +633,7 @@ impl BackstopApp {
                         .spacing(8)
                         .width(Length::Fill),
                     space().height(16),
-                ].into();
+                ].into()
             },
             BackstopApp::Loaded(state) => {
                 let content = column![
@@ -663,7 +663,7 @@ impl BackstopApp {
                         }
                     }
 
-                    return stack![
+                    stack![
                         content,
                         opaque(
                             mouse_area(center(container(content_col).style(|_| {
@@ -685,13 +685,13 @@ impl BackstopApp {
                             }))
                             .on_press(EventMessage::ToggleQueuePeek)
                         )
-                    ].into();
+                    ].into()
                 } else {
-                    return content.into();
+                    content.into()
                 }
             },
             BackstopApp::Error(error) => {
-                return column![
+                column![
                     text!("An error occurred {}!", error.when())
                         .width(Length::Fill)
                         .height(Length::Fill)
@@ -713,9 +713,9 @@ impl BackstopApp {
                         .spacing(8)
                         .width(Length::Fill),
                     space().height(16),
-                ].into();
+                ].into()
             },
-        };
+        }
     }
 
     fn subscriptions(&self) -> Subscription<EventMessage> {
