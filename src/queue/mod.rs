@@ -101,7 +101,7 @@ impl Queue {
     pub fn shuffle(&mut self) {
         let current_song = Arc::clone(&self.songs[self.position]);
 
-        self.songs.remove(0);
+        self.songs.remove(self.position);
         self.songs.shuffle(&mut self.rng);
         self.songs.insert(0, current_song);
         self.position = 0;

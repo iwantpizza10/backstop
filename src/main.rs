@@ -59,6 +59,7 @@ enum EventMessage {
     WindowResize(Size),
     KeyboardModifiersChanged(Modifiers),
     UpdatePlaybackPosition,
+    UpdateRPCTextInput(String),
 
     // app init stuff
     Loaded(Result<SavedState, BackstopError>),
@@ -84,16 +85,16 @@ enum EventMessage {
     PlayPause,
     ToggleShuffle,
     ToggleRepeat,
+    ClearQueue,
 
     // state settings
     SetVolume(i32),
     SetSpeed(i32),
 
     // discord rpc
-    ClearDiscordRpc,
     SetDiscordRpcMode(DiscordRpcMode),
     RemoveRpcListEntry(String),
-    AddRpcListEntry(String),
+    AddRpcListEntry,
 }
 
 #[derive(Clone, Debug)]
@@ -153,6 +154,7 @@ struct AppState {
     sort_type: CacheSortType,
     peeking_queue: bool,
     keyboard_modifiers: Modifiers,
+    rpc_text_input: String,
 }
 
 impl TryFrom<SavedState> for AppState {
@@ -176,6 +178,7 @@ impl TryFrom<SavedState> for AppState {
                 sort_type: CacheSortType::default(),
                 peeking_queue: false,
                 keyboard_modifiers: Modifiers::NONE,
+                rpc_text_input: String::new(),
             })
         } else {
             Err(BackstopError::LoadingError)
@@ -274,6 +277,10 @@ impl BackstopApp {
                         }
                     },
 
+                    EventMessage::UpdateRPCTextInput(text) => {
+                        state.rpc_text_input = text;
+                    }
+
                     // library/index stuff
 
                     EventMessage::TriggerAddMediaDir => {
@@ -298,7 +305,7 @@ impl BackstopApp {
                     //  removemediadir
 
                     EventMessage::TriggerRescanLibrary => {
-                        let dirs = state.saved_state.settings.get_media_directories();
+                        let dirs = state.saved_state.settings.get_media_directories().clone();
 
                         return Task::perform(async move {
                             MediaCache::from_scan(dirs).await
@@ -395,12 +402,11 @@ impl BackstopApp {
                             if let Some(queue) = &mut state.queue && state.saved_state.settings.get_shuffle() {
                                 queue.shuffle();
                             }
-                            
+
                             play_song_now = true;
                         }
-                        
-                        if play_song_now {
 
+                        if play_song_now {
                             if let Err(err) = state.player.play_song(Arc::clone(&song)) {
                                 *self = BackstopApp::Error(err);
                             } else {
@@ -501,14 +507,54 @@ impl BackstopApp {
                         });
                     },
 
+                    EventMessage::ClearQueue => {
+                        let _ = state.discord_rpc.clear_rpc();
+                        state.queue = None;
+                        state.current_song = None;
+                        state.player.clear();
+                    },
+
                     // discord rpc
 
-                    EventMessage::ClearDiscordRpc => {
-                        let _ = state.discord_rpc.clear_rpc();
+                    EventMessage::SetDiscordRpcMode(mode) => {
+                        state.saved_state.settings.set_rpc_mode(mode);
+                        state.discord_rpc.update_rpc_mode(mode);
+
+                        let settings_two = state.saved_state.settings.clone();
+
+                        return Task::future(async move {
+                            let _ = settings_two.clone().save().await;
+
+                            EventMessage::DoNothing
+                        });
                     },
-                    // setdiscordrpcmode
-                    // removerpclistentry
-                    // addrpclistentry
+
+                    EventMessage::RemoveRpcListEntry(item) => {                        
+                        state.saved_state.settings.remove_rpc_list(item);
+                        state.discord_rpc.update_rpc_list(state.saved_state.settings.get_rpc_list());
+
+                        let settings_two = state.saved_state.settings.clone();
+
+                        return Task::future(async move {
+                            let _ = settings_two.clone().save().await;
+
+                            EventMessage::DoNothing
+                        });
+                    }
+
+                    EventMessage::AddRpcListEntry => {
+                        state.saved_state.settings.add_rpc_list(state.rpc_text_input.clone());
+                        state.discord_rpc.update_rpc_list(state.saved_state.settings.get_rpc_list());
+                        state.rpc_text_input = String::new();
+
+                        let settings_two = state.saved_state.settings.clone();
+
+                        return Task::future(async move {
+                            let _ = settings_two.clone().save().await;
+
+                            EventMessage::DoNothing
+                        });
+                    },
 
                     x => {
                         todo!("event {:?} in context {}", x, "BackstopApp::Loaded")

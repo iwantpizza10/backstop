@@ -1,8 +1,9 @@
 use std::{rc::Rc, sync::Arc};
-use iced::{Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, image::Handle, image as img, mouse_area, row, scrollable, space, text}};
-use iced::widget::image as iced_image;
+use color_from_hex::color_from_hex;
+use iced::{Background, Border, Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, container, image::Handle, mouse_area, pick_list, row, scrollable, space, text, text_input}};
+use iced::widget::image as img;
 
-use crate::{AppAssets, AppState, EventMessage, SongsViewType, clip};
+use crate::{AppAssets, AppState, EventMessage, SongsViewType, clip, discord_rpc::DiscordRpcMode};
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub enum MenuView {
@@ -119,7 +120,87 @@ impl MenuView {
             },
 
             Self::Settings => {
-                todo!("Settings") // view
+                let mut media_dirs_col = column![].spacing(4);
+                let mut rpc_items_col = column![].spacing(4);
+
+                for i in state.saved_state.settings.get_media_directories() {
+                    media_dirs_col = media_dirs_col.push(container(row![
+                        space().width(4),
+                        text(i.to_string_lossy())
+                            .width(Length::Fill),
+                        button("Remove")
+                            .on_press(EventMessage::RemoveMediaDir(i.to_string_lossy().to_string()))
+                    ].align_y(Vertical::Center))
+                        .padding(4)
+                        .style(|_| container::Style {
+                        background: Some(Background::Color(color_from_hex!("#170f37"))),
+                        border: Border::default().rounded(5),
+                        ..container::Style::default()
+                    }));
+                }
+
+                for i in state.saved_state.settings.get_rpc_list() {
+                    rpc_items_col = rpc_items_col.push(container(row![
+                        space().width(4),
+                        text(i)
+                            .width(Length::Fill),
+                        button("Remove")
+                            .on_press(EventMessage::RemoveRpcListEntry(i.clone()))
+                    ].align_y(Vertical::Center))
+                        .padding(4)
+                        .style(|_| container::Style {
+                        background: Some(Background::Color(color_from_hex!("#170f37"))),
+                        border: Border::default().rounded(5),
+                        ..container::Style::default()
+                    }));
+                }
+
+                return scrollable(row![
+                    space().width(Length::FillPortion(2)),
+                    column![
+                        space().height(32),
+                        text("Backstop Settings")
+                            .size(36),
+                        space(),
+
+                        column![
+                            text("Media Directories")
+                                .size(24),
+                            media_dirs_col,
+                            row![
+                                button("Add a Media Directory")
+                                    .on_press(EventMessage::TriggerAddMediaDir),
+                                button("Scan Library")
+                                    .on_press(EventMessage::TriggerRescanLibrary),
+                            ].spacing(8)
+                        ].spacing(4),
+
+                        column![
+                            text("Discord RPC")
+                                .size(24),
+                            rpc_items_col,
+                            text(match state.saved_state.settings.get_rpc_mode() {
+                                DiscordRpcMode::Blacklist => "If any song's title or artist CONTAINS one of these, it will not be shown.",
+                                DiscordRpcMode::Whitelist => "A song will only be shown if its title or artist CONTAINS one of these.",
+                                DiscordRpcMode::Disabled => "That list has no effect as RPC is disabled.",
+                            }).size(12),
+                            row![
+                                text_input("Title/artist of songs...", &state.rpc_text_input)
+                                    .on_submit(EventMessage::AddRpcListEntry)
+                                    .on_input(|content| EventMessage::UpdateRPCTextInput(content)),
+                                button("Add")
+                                    .on_press(EventMessage::AddRpcListEntry),
+                                pick_list(DiscordRpcMode::list_all(), Some(state.saved_state.settings.get_rpc_mode()), |val| EventMessage::SetDiscordRpcMode(val))
+                            ].spacing(8)
+                        ].spacing(4),
+                        space().height(32),
+                    ]
+                        .spacing(32)
+                        .width(Length::FillPortion(4))
+                        .align_x(Horizontal::Center),
+                    space().width(Length::FillPortion(2)),
+                ].align_y(Vertical::Center)
+                    .height(Length::Fill)).into();
             }
         }.into()
     }
@@ -182,15 +263,19 @@ pub trait SongListItem {
         col = col.push(if let Some(image) = self.image() {
             image
         } else {
-            iced_image(&assets.cover)
+            img(&assets.cover)
         }.width(192));
+
+        col = col.push(space().height(2));
 
         if let Some(txt) = self.textrow_one() {
             col = col.push(clip!(text(txt)
                 .width(192)
                 .height(23.4) // default line height (1.3) * 18
                 .wrapping(text::Wrapping::None)
-                .size(18)))
+                .size(18)));
+
+            col = col.push(space().height(1));
         }
 
         if let Some(txt) = self.textrow_two() {
@@ -198,7 +283,7 @@ pub trait SongListItem {
                 .width(192)
                 .height(15.6) // default line height (1.3) * 12
                 .wrapping(text::Wrapping::WordOrGlyph)
-                .size(12)))
+                .size(12)));
         }
 
         if let Some(txt) = self.textrow_three() {
@@ -206,7 +291,7 @@ pub trait SongListItem {
                 .width(192)
                 .height(15.6) // default line height (1.3) * 12
                 .wrapping(text::Wrapping::WordOrGlyph)
-                .size(12)))
+                .size(12)));
         }
 
         mouse_area(col)

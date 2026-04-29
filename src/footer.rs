@@ -90,7 +90,7 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
             .spacing(16)
             .align_y(Vertical::Center),
         row![
-            make_svg_button!(include_bytes!("../assets/icons/eraser.svg"), EventMessage::ClearDiscordRpc, 48)
+            make_svg_button!(include_bytes!("../assets/icons/eraser.svg"), EventMessage::ClearQueue, 48)
                 .style(|a, b| button_style(a, b, false)),
             make_svg_button!(include_bytes!("../assets/icons/shuffle.svg"), EventMessage::ToggleShuffle, 48)
                 .style(|a, b| button_style(a, b, state.saved_state.settings.get_shuffle())),
@@ -111,7 +111,7 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
         ]
             .spacing(8),
     ]
-        .spacing(8)
+        .spacing(12)
         .width(384)
         .into()
 }
@@ -119,11 +119,13 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
 fn right_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
     row![
         column![
-            text!("Gain: {}dB", state.saved_state.settings.get_volume_db()),
+            text!("Gain: {}dB", state.saved_state.settings.get_volume_db())
+                .size(14),
             slider(0..=VOLUME_DYNAMIC_RANGE_DB, state.saved_state.settings.get_volume_step(), EventMessage::SetVolume)
                 .width(128),
             space().height(8),
-            text!("Speed: {}x", state.saved_state.settings.get_speed()),
+            text!("Speed: {}x", state.saved_state.settings.get_speed())
+                .size(14),
             slider(1..=SPEED_STEPS, state.saved_state.settings.get_speed_step(), EventMessage::SetSpeed)
                 .default(SPEED_STEPS / 2)
                 .width(128),

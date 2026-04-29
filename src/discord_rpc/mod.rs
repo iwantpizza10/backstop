@@ -1,3 +1,6 @@
+use std::collections::HashSet;
+use std::fmt::Display;
+
 use chrono::{DateTime, Utc};
 use discord_rich_presence::activity::{Activity, ActivityType, Assets, Button, StatusDisplayType, Timestamps};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
@@ -19,10 +22,30 @@ pub enum DiscordRpcMode {
     Disabled,
 }
 
+impl Display for DiscordRpcMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            DiscordRpcMode::Blacklist => "Blacklist",
+            DiscordRpcMode::Whitelist => "Whitelist",
+            DiscordRpcMode::Disabled => "Disabled",
+        })
+    }
+}
+
+impl DiscordRpcMode {
+    pub fn list_all() -> Vec<DiscordRpcMode> {
+        vec![
+            Self::Blacklist,
+            Self::Whitelist,
+            Self::Disabled,
+        ]
+    }
+}
+
 #[derive(Debug)]
 pub struct DiscordRpc {
     rpc_mode_mirror: DiscordRpcMode,
-    rpc_list_mirror: Vec<String>,
+    rpc_list_mirror: HashSet<String>,
     current_song_title: Option<String>,
     current_song_artist: Option<String>,
     song_start_time: Option<DateTime<Utc>>,
@@ -62,8 +85,8 @@ impl DiscordRpc {
     }
 
     /// updates the rpc_list. does not append/remove, just overwrites
-    pub fn update_rpc_list(&mut self, new_list: Vec<&String>) {
-        self.rpc_list_mirror = new_list.iter().map(|x| (*x).clone()).collect();
+    pub fn update_rpc_list(&mut self, new_list: &HashSet<String>) {
+        self.rpc_list_mirror = new_list.clone();
     }
 
     /// updates the playing state. will update the rpc data

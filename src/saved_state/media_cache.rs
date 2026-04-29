@@ -180,6 +180,7 @@ impl MediaCache {
         };
 
         instance.index_filterables();
+        instance.sort(CacheSortType::TitleAlphabetical);
 
         instance
     }
@@ -242,7 +243,7 @@ impl MediaCache {
     }
 
     /// creates a new MediaCache by scanning the privided directories
-    pub async fn from_scan(dirs: Vec<PathBuf>) -> Result<Self, io::Error> {
+    pub async fn from_scan(dirs: HashSet<PathBuf>) -> Result<Self, io::Error> {
         let mut files_list: Vec<PathBuf> = vec![];
         let mut song_metadata: HashSet<Arc<SongFileInfo>> = HashSet::new();
         let mut instance = Self::from(HashSet::new());
@@ -267,6 +268,7 @@ impl MediaCache {
         instance.songs = song_metadata.clone();
         instance.apparent_songs = song_metadata.iter().map(|x| x.clone()).collect();
         instance.index_filterables();
+        instance.sort(CacheSortType::TitleAlphabetical);
         let _ = instance.save();
 
         Ok(instance)
@@ -388,7 +390,7 @@ fn process_cover(tagged_file: Box<dyn AudioTag + Send + Sync>) -> Option<PathBuf
 
     image = image.crop(x_offset, 0, smaller_dimension, smaller_dimension);
     // switch to catmull-rom if this takes forever
-    image = image.resize_exact(256, 256, FilterType::Lanczos3);
+    image = image.resize_exact(384, 384, FilterType::Lanczos3);
     let _ = image.save(&cover_location);
 
     Some(cover_location)

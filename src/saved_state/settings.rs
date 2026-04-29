@@ -142,8 +142,8 @@ impl BackstopSettings {
     }
 
     /// returns a vector of media directories to index
-    pub fn get_media_directories(&self) -> Vec<PathBuf> {
-        self.media_directories.iter().map(PathBuf::clone).collect()
+    pub fn get_media_directories(&self) -> &HashSet<PathBuf> {
+        &self.media_directories
     }
 
     /// adds a media directory to the index list
@@ -167,8 +167,8 @@ impl BackstopSettings {
     }
 
     /// returns list of rpc (in|ex)clusisons
-    pub fn get_rpc_list(&self) -> Vec<&String> {
-        self.rpc_list.iter().collect()
+    pub fn get_rpc_list(&self) -> &HashSet<String> {
+        &self.rpc_list
     }
 
     /// adds to list of rpc (in|ex)clusisons

@@ -86,19 +86,23 @@ impl Player {
     pub fn pause(&mut self) {
         self.audio_player.pause();
     }
-
+    
     /// resumes playing song
     pub fn resume(&mut self) {
         self.audio_player.play();
     }
-
+    
     /// sets **LINEAR** volume of the player
     pub fn set_volume(&self, volume: f32) {
         self.audio_player.set_volume(volume);
     }
-
+    
     /// sets speed of the player
     pub fn set_speed(&self, speed: f32) {
         self.audio_player.set_speed(speed);
+    }
+
+    pub fn clear(&self) {
+        self.audio_player.clear();
     }
 }
