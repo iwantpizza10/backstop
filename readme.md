@@ -23,6 +23,24 @@ Third, click the Scan Library button. This can be found in the same locations as
 
 Finally, after indexing (which can take a while depending on hardware and the number of files being processed) is done, enter the main songs section of the app. This can be done with the "Browse Library" button on the welcome screen or by clicking one of the top three buttons on the navbar.
 
+## Controls
+Upon entering the main songs view, clicking a song will play it and queue up all songs around it. `CTRL`+clicking (or `CMD`+click) a song will append it to the end of the queue. `CTRL`+`SHIFT`+clicking one will insert it into the queue as the next song.
+
+On the left, there is a navbar with buttons that should all have tooltips explaining what they are/do.
+
+On the bottom of the app, there is a footer with several interactive features. Starting from the left, there will be a song info section that only shows up when playing a song. Clicking the cover art will move you to a cover art view. In the center, there are several buttons under a position indicator. The buttons are as follows, from left to right:
+
+- Stop playing, clear queue, clear rich presence, etc
+- Toggle shuffle
+- Skip to previous song
+- Toggle play/pause
+- Skip to next song
+- Toggle repeat
+- Peek queue (shows next few songs in the queue)
+  - To close it, simply click off the menu
+
+On the right, there are two sliders, labelled "Gain" and "Speed." These change the *gain*, or volume, and playback speed of the player respectively.
+
 ## Formats
 Although not all of these have been fully tested, Backstop currently supports the following formats:
 - mp3
