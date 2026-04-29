@@ -15,10 +15,9 @@ use crate::saved_state::settings::BackstopSettings;
 #[derive(Clone, Default, Debug, Copy, PartialEq, Serialize_repr, Deserialize_repr)]
 #[repr(u8)]
 pub enum DiscordRpcMode {
-    // todo: change default back to blacklist
+    #[default]
     Blacklist,
     Whitelist,
-    #[default]
     Disabled,
 }
 
@@ -62,7 +61,7 @@ impl DiscordRpc {
             current_song_title: None,
             current_song_artist: None,
             song_start_time: None,
-            playing_state: playing_state,
+            playing_state,
             rpc_client: if settings.get_rpc_mode() != DiscordRpcMode::Disabled {
                     let mut client = DiscordIpcClient::new(DISCORD_APP_ID);
                     client.connect()?;

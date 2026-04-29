@@ -187,10 +187,10 @@ impl MenuView {
                             row![
                                 text_input("Title/artist of songs...", &state.rpc_text_input)
                                     .on_submit(EventMessage::AddRpcListEntry)
-                                    .on_input(|content| EventMessage::UpdateRPCTextInput(content)),
+                                    .on_input(EventMessage::UpdateRPCTextInput),
                                 button("Add")
                                     .on_press(EventMessage::AddRpcListEntry),
-                                pick_list(DiscordRpcMode::list_all(), Some(state.saved_state.settings.get_rpc_mode()), |val| EventMessage::SetDiscordRpcMode(val))
+                                pick_list(DiscordRpcMode::list_all(), Some(state.saved_state.settings.get_rpc_mode()), EventMessage::SetDiscordRpcMode)
                             ].spacing(8)
                         ].spacing(4),
                         space().height(32),
@@ -206,11 +206,11 @@ impl MenuView {
     }
 }
 
-fn rowgen<'a>(items: &'a Vec<Arc<impl SongListItem>>, rows: &mut Vec<Element<'a, EventMessage>>, items_per_row: i32, assets: Rc<AppAssets>) {
+fn rowgen<'a>(items: &'a [Arc<impl SongListItem>], rows: &mut Vec<Element<'a, EventMessage>>, items_per_row: i32, assets: Rc<AppAssets>) {
     for i in 0..(items.len() as i32 / items_per_row) {
         let mut row_songs = vec![];
 
-        for j in 0..items_per_row as i32 {
+        for j in 0..items_per_row {
             row_songs.push(items[((i * items_per_row) + j) as usize].view(Rc::clone(&assets)));
         }
 

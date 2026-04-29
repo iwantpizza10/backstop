@@ -1,4 +1,4 @@
-// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use core::f32;
 use std::path::PathBuf;
@@ -42,6 +42,7 @@ fn main() -> iced::Result {
         .title(BackstopApp::title)
         .theme(BackstopApp::theme)
         .window_size((1290, 768))
+        .exit_on_close_request(true)
         .run()
 }
 
@@ -67,7 +68,6 @@ enum EventMessage {
     // library/index stuff
     TriggerAddMediaDir,
     AddMediaDir(PathBuf),
-    TriggerRemoveMediaDir,
     RemoveMediaDir(String),
     TriggerRescanLibrary,
     UpdateLibrary(MediaCache),
@@ -100,7 +100,6 @@ enum EventMessage {
 #[derive(Clone, Debug)]
 enum BackstopError {
     PlaybackError,
-    IndexError,
     LoadingError,
 }
 
@@ -109,7 +108,6 @@ impl BackstopError {
     fn when(&self) -> &str {
         match self {
             Self::PlaybackError => "during playback",
-            Self::IndexError => "during indexing",
             Self::LoadingError => "during loading",
         }
     }
@@ -186,6 +184,7 @@ impl TryFrom<SavedState> for AppState {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Default)]
 enum BackstopApp {
     #[default]
@@ -320,7 +319,7 @@ impl BackstopApp {
 
                         return Task::perform(async move {
                             MediaCache::from_scan(dirs).await
-                        }, |x| x.map_or(EventMessage::DoNothing, |x| EventMessage::UpdateLibrary(x)));
+                        }, |x| x.map_or(EventMessage::DoNothing, EventMessage::UpdateLibrary));
                     },
 
                     EventMessage::UpdateLibrary(cache) => {
@@ -335,13 +334,13 @@ impl BackstopApp {
 
                     EventMessage::ChangeViewType(view) => {
                         if let SongsViewType::Artist(artist) = &view {
-                            let artist = Arc::clone(&artist);
+                            let artist = Arc::clone(artist);
 
                             state.saved_state.media_cache.filter(CacheFilterType::Artist(artist));
                         }
 
                         if let SongsViewType::Album(album) = &view {
-                            let album = Arc::clone(&album);
+                            let album = Arc::clone(album);
 
                             state.saved_state.media_cache.filter(CacheFilterType::Album(album));
                         }
@@ -385,9 +384,7 @@ impl BackstopApp {
                                     q.insert_next(Arc::clone(&song));
                                     play_song_now = false;
                                 } else {
-                                    state.queue = Queue::from_vec(&vec![
-                                        Arc::clone(&song),
-                                    ], Arc::clone(&song));
+                                    state.queue = Queue::from_vec(&[Arc::clone(&song)], Arc::clone(&song));
 
                                     play_song_now = true;
                                 }
@@ -398,9 +395,7 @@ impl BackstopApp {
                                     q.append_song(Arc::clone(&song));
                                     play_song_now = false;
                                 } else {
-                                    state.queue = Queue::from_vec(&vec![
-                                        Arc::clone(&song),
-                                    ], Arc::clone(&song));
+                                    state.queue = Queue::from_vec(&[Arc::clone(&song)], Arc::clone(&song));
 
                                     play_song_now = true;
                                 }
@@ -568,7 +563,7 @@ impl BackstopApp {
                     },
 
                     x => {
-                        todo!("event {:?} in context {}", x, "BackstopApp::Loaded")
+                        unimplemented!("event {:?} in context {}", x, "BackstopApp::Loaded")
                     },
                 }
             },
@@ -614,8 +609,7 @@ impl BackstopApp {
                     if let Some(q) = &state.queue {
                         let peek = q.peek()
                             .iter()
-                            .filter(|x| if let Some(_) = x { true } else { false })
-                            .map(|x| x.clone().expect("these had better be some"))
+                            .filter_map(|x| x.clone())
                             .collect::<Vec<_>>();
 
                         for i in peek {

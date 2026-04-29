@@ -13,8 +13,8 @@ pub struct Queue {
 
 impl Queue {
     /// returns a Queue or None if the Vec<_> is empty
-    pub fn from_vec(vec: &Vec<Arc<SongFileInfo>>, current: Arc<SongFileInfo>) -> Option<Self> {
-        if vec.len() == 0 {
+    pub fn from_vec(vec: &[Arc<SongFileInfo>], current: Arc<SongFileInfo>) -> Option<Self> {
+        if vec.is_empty() {
             return None;
         }
 
@@ -23,8 +23,8 @@ impl Queue {
         Some(Self {
             position: pos,
             rng: rand::rng(),
-            songs: vec.clone(),
-            unshuffled_songs: vec.clone(),
+            songs: vec.to_owned(),
+            unshuffled_songs: vec.to_owned(),
         })
     }
 
@@ -38,26 +38,6 @@ impl Queue {
     pub fn insert_next(&mut self, song: Arc<SongFileInfo>) {
         self.unshuffled_songs.push(Arc::clone(&song));
         self.songs.insert(self.position + 1, song);
-    }
-
-    /// returns an ordered list of songs in the queue
-    pub fn get_songs(&self) -> &Vec<Arc<SongFileInfo>> {
-        &self.songs
-    }
-
-    /// returns the previous song in the queue
-    pub fn get_previous_song(&self) -> Option<Arc<SongFileInfo>> {
-        self.songs.get(self.position - 1).map_or(None, |x| Some(Arc::clone(x)))
-    }
-
-    /// returns the current song in the queue
-    pub fn get_current_song(&self) -> Arc<SongFileInfo> {
-        Arc::clone(&self.songs[self.position])
-    }
-
-    /// returns the next song in the queue
-    pub fn get_next_song(&self) -> Option<Arc<SongFileInfo>> {
-        self.songs.get(self.position + 1).map_or(None, |x| Some(Arc::clone(x)))
     }
 
     /// de-advances the queue position & returns the new current song. returns None if de-advancing is not possible
@@ -91,9 +71,9 @@ impl Queue {
     /// returns the next 3 songs in the queue
     pub fn peek(&self) -> Vec<Option<Arc<SongFileInfo>>> {
         vec![
-            self.songs.get(self.position + 1).map_or(None, |x| Some(Arc::clone(x))),
-            self.songs.get(self.position + 2).map_or(None, |x| Some(Arc::clone(x))),
-            self.songs.get(self.position + 3).map_or(None, |x| Some(Arc::clone(x))),
+            self.songs.get(self.position + 1).map(Arc::clone),
+            self.songs.get(self.position + 2).map(Arc::clone),
+            self.songs.get(self.position + 3).map(Arc::clone),
         ]
     }
 

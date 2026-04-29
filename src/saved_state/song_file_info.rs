@@ -45,9 +45,9 @@ impl SongFileInfo {
     }
 
     fn guess_fields(&mut self) {
-        let name = self.path.file_name().map_or(None, |x| x.to_str());
-        let extension = self.path.extension().map_or(None, |x| x.to_str());
-        let extension = extension.map_or(None, |x| Some(format!(".{}", x)));
+        let name = self.path.file_name().and_then(|x| x.to_str());
+        let extension = self.path.extension().and_then(|x| x.to_str());
+        let extension = extension.map(|x| format!(".{}", x));
         let extension = extension.unwrap_or_default();
 
         if let Some(name) = name {
@@ -106,21 +106,21 @@ impl SongFileInfo {
 
     pub fn artist(&self) -> String {
         if let Some(artist) = &self.artist {
-            return artist.clone();
+            artist.clone()
         } else if let Some(guessed_artist) = &self.guessed_artist {
-            return guessed_artist.clone();
+            guessed_artist.clone()
         } else {
-            return "Unknown Artist".to_string();
+            "Unknown Artist".to_string()
         }
     }
 
     pub fn title(&self) -> String {
         if let Some(title) = &self.title {
-            return title.clone();
+            title.clone()
         } else if let Some(guessed_title) = &self.guessed_title {
-            return guessed_title.clone();
+            guessed_title.clone()
         } else {
-            return "Unknown Title".to_string();
+            "Unknown Title".to_string()
         }
     }
 
@@ -139,11 +139,7 @@ impl SongFileInfo {
 
 impl SongListItem for SongFileInfo {
     fn image(&self) -> Option<image::Image<image::Handle>> {
-        if let Some(cover) = &self.cover {
-            Some(image(cover))
-        } else {
-            None
-        }
+        self.cover.clone().map(image)
     }
 
     fn textrow_one<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {

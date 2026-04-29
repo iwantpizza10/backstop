@@ -31,7 +31,7 @@ impl Player {
         device.log_on_drop(false);
 
         let instance = Self {
-            audio_player: Rc::new(rodio::Player::connect_new(&device.mixer())),
+            audio_player: Rc::new(rodio::Player::connect_new(device.mixer())),
             _device: Rc::new(device),
             current_duration: None,
         };

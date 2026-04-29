@@ -30,7 +30,7 @@ impl BackstopSettings {
     /// * `Err<std::io::Error>` if io error
     pub fn load() -> Result<Self, Box<dyn Error>> {
         let mut path = constants::conf_dir();
-        path.push("settings_temp.bin"); // todo: untemp
+        path.push("settings.bin");
 
         let file = fs::read(path);
 
@@ -38,8 +38,7 @@ impl BackstopSettings {
             Ok(file) => {
                 let mut settings = serde_binary::from_vec::<BackstopSettings>(file, Endian::Little)?;
 
-                // todo: uncomment this
-                // settings.first_launch = false;
+                settings.first_launch = false;
 
                 Ok(settings)
             },
@@ -61,7 +60,7 @@ impl BackstopSettings {
     /// * `Err<std::io::Error>` if io error
     pub async fn save(&mut self) -> Result<(), Box<dyn Error>> {
         let mut path = constants::conf_dir();
-        path.push("settings_temp.bin"); // todo: untemp
+        path.push("settings.bin");
 
         let serialized = serde_binary::to_vec(self, Endian::Little)?;
         fs::write(path, serialized)?;
@@ -107,10 +106,7 @@ impl BackstopSettings {
 
     /// returns the current volume's step (for use in the slider ui thing)
     pub fn get_volume_step(&self) -> i32 {
-        let db = self.get_volume_db() as i32 + VOLUME_DYNAMIC_RANGE_DB;
-
-        // db.clamp(0, VOLUME_DYNAMIC_RANGE_DB)
-        db
+        self.get_volume_db() as i32 + VOLUME_DYNAMIC_RANGE_DB
     }
 
     /// sets the volume in **decibels**. does not adjust the audio player

@@ -56,11 +56,7 @@ impl PartialEq for Artist {
 
 impl SongListItem for Artist {
     fn image(&self) -> Option<iced_image::Image<iced_image::Handle>> {
-        if let Some(icon) = &self.icon {
-            Some(iced_image(icon))
-        } else {
-            None
-        }
+        self.icon.clone().map(iced_image)
     }
 
     fn textrow_one<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
@@ -93,11 +89,7 @@ impl PartialEq for Album {
 
 impl SongListItem for Album {
     fn image(&self) -> Option<iced_image::Image<iced_image::Handle>> {
-        if let Some(icon) = &self.icon {
-            Some(iced_image(icon))
-        } else {
-            None
-        }
+        self.icon.clone().map(iced_image)
     }
 
     fn textrow_one<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
@@ -134,7 +126,7 @@ impl MediaCache {
     /// * `Err<std::io::Error>` if io error
     pub fn load() -> Result<Self, Box<dyn Error>> {
         let mut path = constants::conf_dir();
-        path.push("media_cache_temp.bin"); // todo: untemp
+        path.push("media_cache.bin");
 
         let file = fs::read(path);
 
@@ -162,7 +154,7 @@ impl MediaCache {
     /// * `Err<std::io::Error>` if io error
     pub fn save(&self) -> Result<(), Box<dyn Error>> {
         let mut path = constants::conf_dir();
-        path.push("media_cache_temp.bin"); // todo: untemp
+        path.push("media_cache.bin");
 
         let serialized = serde_binary::to_vec(&self.songs, Endian::Little)?;
         fs::write(path, serialized)?;
@@ -174,7 +166,7 @@ impl MediaCache {
     fn from_apparent(set: HashSet<Arc<SongFileInfo>>) -> Self {
         let mut instance = Self {
             songs: set.clone(),
-            apparent_songs: set.iter().map(|x| x.clone()).collect(),
+            apparent_songs: set.iter().map(Arc::clone).collect(),
             albums: vec![],
             artists: vec![],
         };
@@ -204,10 +196,10 @@ impl MediaCache {
     pub fn sort(&mut self, sort_type: CacheSortType) {
         match sort_type {
             CacheSortType::ArtistAlphabetical => {
-                self.apparent_songs.sort_by(|a, b| a.artist().to_lowercase().cmp(&b.artist().to_lowercase()));
+                self.apparent_songs.sort_by_key(|a| a.artist().to_lowercase());
             },
             CacheSortType::TitleAlphabetical => {
-                self.apparent_songs.sort_by(|a, b| a.title().to_lowercase().cmp(&b.title().to_lowercase()));
+                self.apparent_songs.sort_by_key(|a| a.title().to_lowercase());
             },
         }
     }
@@ -217,7 +209,7 @@ impl MediaCache {
             CacheFilterType::Album(album) => {
                 let mut songs = self.songs.iter()
                     .filter(|song| song.album == Some(album.name.clone()))
-                    .map(|x| x.clone())
+                    .map(Arc::clone)
                     .collect::<Vec<_>>();
 
                 songs.sort_by_key(|x| x.track_number);
@@ -227,7 +219,7 @@ impl MediaCache {
             CacheFilterType::Artist(artist) => {
                 let mut songs = self.songs.iter()
                     .filter(|song| song.artist() == artist.name)
-                    .map(|x| x.clone())
+                    .map(Arc::clone)
                     .collect::<Vec<_>>();
 
                 songs.sort_by_key(|x| x.title());
@@ -236,7 +228,7 @@ impl MediaCache {
             },
             CacheFilterType::None => {
                 self.apparent_songs = self.songs.iter()
-                    .map(|x| x.clone())
+                    .map(Arc::clone)
                     .collect()
             },
         }
@@ -248,8 +240,7 @@ impl MediaCache {
         let mut song_metadata: HashSet<Arc<SongFileInfo>> = HashSet::new();
         let mut instance = Self::from(HashSet::new());
 
-        // todo: uncomment
-        // clear_covers_cache()?;
+        clear_covers_cache()?;
 
         for dir in dirs {
             let mut files = scan_dir(&dir).await?;
@@ -266,7 +257,7 @@ impl MediaCache {
         }
 
         instance.songs = song_metadata.clone();
-        instance.apparent_songs = song_metadata.iter().map(|x| x.clone()).collect();
+        instance.apparent_songs = song_metadata.iter().map(Arc::clone).collect();
         instance.index_filterables();
         instance.sort(CacheSortType::TitleAlphabetical);
         let _ = instance.save();
@@ -297,11 +288,11 @@ impl MediaCache {
         }
 
         self.albums = albums_set.iter()
-            .map(|x| Arc::clone(x))
+            .map(Arc::clone)
             .collect::<Vec<_>>();
 
         self.artists = artists_set.iter()
-            .map(|x| Arc::clone(x))
+            .map(Arc::clone)
             .collect::<Vec<_>>();
 
         self.albums.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
@@ -340,10 +331,10 @@ async fn scan_dir(dir: &PathBuf) -> Result<Vec<PathBuf>, io::Error> {
 }
 
 fn scan_metadata(path: &PathBuf) -> Result<SongFileInfo, audiotags::Error> {
-    let tagged_file = Tag::default().read_from_path(&path)?;
+    let tagged_file = Tag::default().read_from_path(path)?;
 
     let album = tagged_file.album()
-        .map_or(None, |x| Some(x.title.to_string()));
+        .map(|x| x.title.to_string());
 
     let info = SongFileInfo::new(path.clone())
         .set_title(softunwrap_str!(tagged_file.title()))
@@ -414,10 +405,8 @@ fn clear_covers_cache() -> Result<(), io::Error> {
 
     let dir = fs::read_dir(path)?;
 
-    for i in dir {
-        if let Ok(file) = i {
-            fs::remove_file(file.path())?;
-        }
+    for i in dir.flatten() {
+        fs::remove_file(i.path())?;
     }
 
     Ok(())
