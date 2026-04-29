@@ -173,7 +173,8 @@ impl MenuView {
                                 button("Scan Library")
                                     .on_press(EventMessage::TriggerRescanLibrary),
                             ].spacing(8)
-                        ].spacing(4),
+                        ].spacing(4)
+                            .width(Length::Fill),
 
                         column![
                             text("Discord RPC")
@@ -192,7 +193,8 @@ impl MenuView {
                                     .on_press(EventMessage::AddRpcListEntry),
                                 pick_list(DiscordRpcMode::list_all(), Some(state.saved_state.settings.get_rpc_mode()), EventMessage::SetDiscordRpcMode)
                             ].spacing(8)
-                        ].spacing(4),
+                        ].spacing(4)
+                            .width(Length::Fill),
                         space().height(32),
                     ]
                         .spacing(32)
