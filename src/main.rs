@@ -26,7 +26,7 @@ mod navbar;
 mod footer;
 mod svg_button;
 
-use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
+use crate::constants::{BACKSTOP_LOGO, PLACEHOLDER_COVER, SECONDS_TIL_BACKSKIPPABLE, SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::discord_rpc::{DiscordRpc, DiscordRpcMode};
 use crate::footer::Footer;
 use crate::menu_view::MenuView;
@@ -449,10 +449,31 @@ impl BackstopApp {
                     },
 
                     EventMessage::NextTrack | EventMessage::PrevTrack => {
+                        if let Some(song) = state.current_song.clone() && let EventMessage::PrevTrack = message {
+                            if Utc::now().timestamp() - song.start_time.timestamp() > SECONDS_TIL_BACKSKIPPABLE as i64 {
+                                if let Err(err) = state.player.play_song(Arc::clone(&song.file_info)) {
+                                    *self = BackstopApp::Error(err);
+                                } else {
+                                    state.playing = PlayingState::Playing;
+
+                                    let cur_song = CurrentSong {
+                                        start_time: Utc::now(),
+                                        file_info: song.file_info,
+                                    };
+
+                                    state.current_song = Some(cur_song.clone());
+                                    state.discord_rpc.update_playing_state(state.playing);
+                                    state.discord_rpc.play_song(cur_song);
+                                }
+
+                                return Task::none();
+                            }
+                        }
+
                         if let Some(q) = &mut state.queue && let Some(song) = match message {
                             EventMessage::NextTrack => {q.next_song()},
                             EventMessage::PrevTrack => {q.previous_song()},
-                            _ => { panic!("literally how") } 
+                            _ => unreachable!() 
                         } {
                             if let Err(err) = state.player.play_song(Arc::clone(&song)) {
                                 *self = BackstopApp::Error(err);

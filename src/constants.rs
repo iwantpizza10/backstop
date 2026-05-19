@@ -5,6 +5,7 @@ pub const PLACEHOLDER_COVER: &[u8] = include_bytes!("../assets/cover_placeholder
 
 pub const VOLUME_DYNAMIC_RANGE_DB: i32 = 20;
 pub const SPEED_STEPS: i32 = 40;
+pub const SECONDS_TIL_BACKSKIPPABLE: i32 = 1; // literally what do i call this variable
 
 pub const BACKSTOP_PAUSE_ICON_URL: &str = "https://github.com/iwantpizza10/backstop/blob/main/assets/pause.png?raw=true";
 pub const BACKSTOP_LOGO_URL: &str = "https://github.com/iwantpizza10/backstop/blob/main/assets/backstopshort_square.png?raw=true";
