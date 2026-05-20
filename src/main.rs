@@ -48,7 +48,7 @@ fn main() -> iced::Result {
         .subscription(BackstopApp::subscriptions)
         .title(BackstopApp::title)
         .theme(BackstopApp::theme)
-        .window_size((1290, 768))
+        .window_size((1692, 768))
         .exit_on_close_request(true)
         .run()
 }
@@ -229,7 +229,7 @@ impl BackstopApp {
                             *self = Self::Error(BackstopError::LoadingError);
                         }
 
-                        return Task::done(EventMessage::WindowResize(Size { width: 1366.0, height: 768.0 }))
+                        return Task::done(EventMessage::WindowResize(Size { width: 1692.0, height: 768.0 }))
                     },
 
                     EventMessage::ClearCache => {
@@ -289,6 +289,11 @@ impl BackstopApp {
                                     state.discord_rpc.update_playing_state(state.playing);
                                     state.discord_rpc.play_song(cur_song);
                                 }
+
+                                return Task::none();
+                            } else if state.queue.is_some() && song.is_none() {
+                                println!("eughh???");
+                                let _ = state.discord_rpc.clear_rpc();
                             }
                         }
                     },
