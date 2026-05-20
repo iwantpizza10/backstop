@@ -50,6 +50,7 @@ pub struct DiscordRpc {
     song_start_time: Option<DateTime<Utc>>,
     playing_state: PlayingState,
     rpc_client: Option<DiscordIpcClient>,
+    is_clear: bool,
 }
 
 impl DiscordRpc {
@@ -71,6 +72,7 @@ impl DiscordRpc {
                         Some(client)
                     }
                 } else { None },
+            is_clear: false,
         })
     }
 
@@ -113,6 +115,7 @@ impl DiscordRpc {
         self.current_song_artist = None;
         self.current_song_title = None;
         self.song_start_time = None;
+        self.is_clear = true;
 
         if let Some(client) = &mut self.rpc_client {
             client.clear_activity()?;
@@ -146,6 +149,7 @@ impl DiscordRpc {
                 .assets(image);
 
             client.set_activity(activity)?;
+            self.is_clear = false;
 
             return Ok(Some(()))
         }
@@ -185,5 +189,9 @@ impl DiscordRpc {
         }
 
         allowed
+    }
+
+    pub fn is_clear(&self) -> bool {
+        self.is_clear
     }
 }

@@ -291,9 +291,12 @@ impl BackstopApp {
                                 }
 
                                 return Task::none();
-                            } else if state.queue.is_some() && song.is_none() {
-                                println!("eughh???");
+                            } else if state.queue.is_some() && song.is_none() && !state.discord_rpc.is_clear() {
                                 let _ = state.discord_rpc.clear_rpc();
+                                state.queue = None;
+                                state.current_song = None;
+                                state.playing = PlayingState::NotPlaying;
+                                state.player.clear();
                             }
                         }
                     },
