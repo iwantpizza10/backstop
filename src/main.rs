@@ -660,6 +660,7 @@ impl BackstopApp {
                 ].into()
             },
             BackstopApp::Loaded(state) => {
+                let area;
                 let content = column![
                     row![
                         Navbar::view(state),
@@ -687,32 +688,31 @@ impl BackstopApp {
                         }
                     }
 
-                    stack![
-                        content,
-                        opaque(
-                            mouse_area(center(container(content_col).style(|_| {
-                                container::Style {
-                                    text_color: Some(Color::WHITE),
-                                    background: Some(color_from_hex!("#170f37").into()),
-                                    border: Border::default().color(Color::WHITE).width(1).rounded(15),
-                                    shadow: Shadow::default(),
-                                    snap: false,
-                                }
-                            }).padding(16)).style(|_| {
-                                container::Style {
-                                    background: Some(Color {
-                                        a: 0.75,
-                                        ..Color::BLACK
-                                    }.into()),
-                                    ..container::Style::default()
-                                }
-                            }))
-                            .on_press(EventMessage::ToggleQueuePeek)
-                        )
-                    ].into()
+                    area = opaque(
+                        mouse_area(center(container(content_col).style(|_| {
+                            container::Style {
+                                text_color: Some(Color::WHITE),
+                                background: Some(color_from_hex!("#170f37").into()),
+                                border: Border::default().color(Color::WHITE).width(1).rounded(15),
+                                shadow: Shadow::default(),
+                                snap: false,
+                            }
+                        }).padding(16)).style(|_| {
+                            container::Style {
+                                background: Some(Color {
+                                    a: 0.75,
+                                    ..Color::BLACK
+                                }.into()),
+                                ..container::Style::default()
+                            }
+                        }))
+                        .on_press(EventMessage::ToggleQueuePeek)
+                    );
                 } else {
-                    content.into()
+                    area = space().into();
                 }
+
+                stack![ content, area ].into()
             },
             BackstopApp::Error(error) => {
                 column![
