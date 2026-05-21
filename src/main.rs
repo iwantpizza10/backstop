@@ -240,9 +240,7 @@ impl BackstopApp {
                         let _ = BackstopSettings::unsave();
                     },
 
-                    x => {
-                        unimplemented!("event {:?} in context {}", x, "BackstopApp::Loading")
-                    },
+                    x => unimplemented!("event {:?} in context {}", x, "BackstopApp::Loading"),
                 }
             },
             Self::Loaded(state) => {
@@ -401,7 +399,7 @@ impl BackstopApp {
 
                     EventMessage::PlaySong(song) => {
                         let play_song_now;
-                        
+
                         if state.keyboard_modifiers.command() {
                             if state.keyboard_modifiers.shift() {
                                 // ctrl+shift+click - inserts song as next song in queue, makes new queue if needed
@@ -480,7 +478,7 @@ impl BackstopApp {
                         if let Some(q) = &mut state.queue && let Some(song) = match message {
                             EventMessage::NextTrack => {q.next_song()},
                             EventMessage::PrevTrack => {q.previous_song()},
-                            _ => unreachable!() 
+                            _ => unreachable!()
                         } {
                             if let Err(err) = state.player.play_song(Arc::clone(&song)) {
                                 *self = BackstopApp::Error(err);
@@ -582,7 +580,7 @@ impl BackstopApp {
                         });
                     },
 
-                    EventMessage::RemoveRpcListEntry(item) => {                        
+                    EventMessage::RemoveRpcListEntry(item) => {
                         state.saved_state.settings.remove_rpc_list(item);
                         state.discord_rpc.update_rpc_list(state.saved_state.settings.get_rpc_list());
 
@@ -609,9 +607,7 @@ impl BackstopApp {
                         });
                     },
 
-                    x => {
-                        unimplemented!("event {:?} in context {}", x, "BackstopApp::Loaded")
-                    },
+                    x => unimplemented!("event {:?} in context {}", x, "BackstopApp::Loaded"),
                 }
             },
             Self::Error(err) => {

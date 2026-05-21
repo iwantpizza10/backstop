@@ -104,7 +104,7 @@ impl MenuView {
 
                     col = col.push(text(cur_song.file_info.artist())
                         .size(18));
-                    
+
                     row![
                         col
                             .align_x(Horizontal::Center)

@@ -23,7 +23,7 @@ pub struct BackstopSettings {
 
 impl BackstopSettings {
     /// loads settings from disk
-    /// 
+    ///
     /// returns:
     /// * `Ok(_)` if it loaded fine
     /// * `Err<serde_binary::Error>` if it cant deserialize
@@ -53,7 +53,7 @@ impl BackstopSettings {
     }
 
     /// saves settings to disk
-    /// 
+    ///
     /// returns:
     /// * Ok(()) if it saved w/o issue
     /// * `Err<serde_binary::Error>` if it cant serialize
@@ -127,7 +127,7 @@ impl BackstopSettings {
     pub fn get_speed(&self) -> f32 {
         self.speed
     }
-    
+
     /// returns the current speed's step (for use in the slider ui thing)
     pub fn get_speed_step(&self) -> i32 {
         (self.get_speed() * (SPEED_STEPS as f32 / 2.0)) as i32

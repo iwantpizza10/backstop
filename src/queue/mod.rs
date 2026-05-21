@@ -90,7 +90,7 @@ impl Queue {
     /// unshuffles the queue
     pub fn unshuffle(&mut self) {
         let current_song = Arc::clone(&self.songs[self.position]);
-        
+
         self.songs = self.unshuffled_songs.clone();
         self.position = self.songs.iter()
             .position(|x| **x == *current_song)

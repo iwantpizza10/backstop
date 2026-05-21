@@ -83,7 +83,7 @@ impl DiscordRpc {
         } else if self.rpc_mode_mirror != DiscordRpcMode::Disabled && new_mode == DiscordRpcMode::Disabled {
             let _ = self.clear_rpc();
             self.rpc_client = None;
-        } 
+        }
 
         self.rpc_mode_mirror = new_mode;
     }
