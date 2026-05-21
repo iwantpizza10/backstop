@@ -78,6 +78,7 @@ impl Player {
         self.current_duration.unwrap_or(Duration::ZERO)
     }
 
+    /// returns true if current song is done / there is no song
     pub fn song_done_or_empty(&self) -> bool {
         self.audio_player.empty()
     }
@@ -102,7 +103,9 @@ impl Player {
         self.audio_player.set_speed(speed);
     }
 
-    pub fn clear(&self) {
+    /// clears current song
+    pub fn clear(&mut self) {
+        self.current_duration = Some(Duration::ZERO);
         self.audio_player.clear();
     }
 }
