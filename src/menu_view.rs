@@ -242,15 +242,15 @@ pub trait SongListItem {
         None
     }
 
-    fn textrow_one<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+    fn textrow_one(&self) -> Option<impl text::IntoFragment<'_>> {
         None::<String>
     }
 
-    fn textrow_two<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+    fn textrow_two(&self) -> Option<impl text::IntoFragment<'_>> {
         None::<String>
     }
 
-    fn textrow_three<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+    fn textrow_three(&self) -> Option<impl text::IntoFragment<'_>> {
         None::<String>
     }
 

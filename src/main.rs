@@ -171,7 +171,7 @@ impl TryFrom<SavedState> for AppState {
         let player = Player::new(value.settings.get_speed(), value.settings.get_volume_linear());
         let rpc = DiscordRpc::new(&value.settings, PlayingState::default());
 
-        if let Ok(player) = player && let Ok(rpc) = rpc {
+        if let Ok(player) = player {
             Ok(Self {
                 menu_view: if value.settings.get_first_launch() { MenuView::Welcome } else { MenuView::SongsView(SongsViewType::All) },
                 discord_rpc: rpc,
@@ -193,7 +193,7 @@ impl TryFrom<SavedState> for AppState {
     }
 }
 
-#[allow(clippy::large_enum_variant)]
+#[expect(clippy::large_enum_variant)]
 #[derive(Default)]
 enum BackstopApp {
     #[default]
@@ -456,7 +456,7 @@ impl BackstopApp {
 
                     EventMessage::NextTrack | EventMessage::PrevTrack => {
                         if let Some(song) = state.current_song.clone() && let EventMessage::PrevTrack = message
-                            && Utc::now().timestamp() - song.start_time.timestamp() > SECONDS_TIL_BACKSKIPPABLE as i64 {
+                            && Utc::now().timestamp() - song.start_time.timestamp() > SECONDS_TIL_BACKSKIPPABLE {
                             if let Err(err) = state.player.play_song(Arc::clone(&song.file_info)) {
                                 *self = BackstopApp::Error(err);
                             } else {

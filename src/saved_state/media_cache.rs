@@ -59,7 +59,7 @@ impl SongListItem for Artist {
         self.icon.clone().map(iced_image)
     }
 
-    fn textrow_one<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+    fn textrow_one(&self) -> Option<impl text::IntoFragment<'_>> {
         Some(&self.name)
     }
 
@@ -92,11 +92,11 @@ impl SongListItem for Album {
         self.icon.clone().map(iced_image)
     }
 
-    fn textrow_one<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+    fn textrow_one(&self) -> Option<impl text::IntoFragment<'_>> {
         Some(&self.name)
     }
 
-    fn textrow_two<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+    fn textrow_two(&self) -> Option<impl text::IntoFragment<'_>> {
         if let Some(artist) = &self.artist {
             Some(artist)
         } else {

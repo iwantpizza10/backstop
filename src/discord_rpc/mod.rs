@@ -55,8 +55,8 @@ pub struct DiscordRpc {
 
 impl DiscordRpc {
     /// creates a new DiscordRpc instance
-    pub fn new(settings: &BackstopSettings, playing_state: PlayingState) -> Result<Self, Error> {
-        Ok(Self {
+    pub fn new(settings: &BackstopSettings, playing_state: PlayingState) -> Self {
+        Self {
             rpc_mode_mirror: settings.get_rpc_mode(),
             rpc_list_mirror: settings.get_rpc_list().iter().map(|x| (*x).clone()).collect(),
             current_song_title: None,
@@ -73,7 +73,7 @@ impl DiscordRpc {
                     }
                 } else { None },
             is_clear: false,
-        })
+        }
     }
 
     /// updates the rpc_mode, handles connecting/disconnecting as needed

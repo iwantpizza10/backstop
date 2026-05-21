@@ -1,5 +1,8 @@
 [package]
 name = "backstop"
+description = "a desktop music player built w/ rust"
+repository = "https://github.com/iwantpizza10/backstop"
+license = "MIT"
 version = "2.0.0"
 edition = "2024"
 
@@ -24,7 +27,6 @@ uuid = { version = "1.23.1", features = ["v4"] }
 [lints.clippy]
 allow_attributes = "warn"
 branches_sharing_code = "warn"
-cargo_common_metadata = "deny"
 case_sensitive_file_extension_comparisons = "warn"
 cast_lossless = "warn"
 clone_on_ref_ptr = "warn"

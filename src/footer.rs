@@ -24,7 +24,7 @@ impl Footer {
     }
 }
 
-fn left_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
+fn left_nav(state: &AppState) -> Element<'_, EventMessage> {
     let image_handle;
 
     if let Some(song) = &state.current_song {
@@ -76,7 +76,7 @@ fn left_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
         .into()
 }
 
-fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
+fn center_nav(state: &AppState) -> Element<'_, EventMessage> {
     let timestamp_one = duration_to_string(state.player.get_pos());
     let timestamp_two = duration_to_string(state.player.get_duration());
 
@@ -116,7 +116,7 @@ fn center_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
         .into()
 }
 
-fn right_nav<'a>(state: &'a AppState) -> Element<'a, EventMessage> {
+fn right_nav(state: &AppState) -> Element<'_, EventMessage> {
     row![
         column![
             text!("Gain: {}dB", state.saved_state.settings.get_volume_db())

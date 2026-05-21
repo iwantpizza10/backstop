@@ -142,15 +142,15 @@ impl SongListItem for SongFileInfo {
         self.cover.clone().map(image)
     }
 
-    fn textrow_one<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+    fn textrow_one(&self) -> Option<impl text::IntoFragment<'_>> {
         Some(self.title())
     }
 
-    fn textrow_two<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+    fn textrow_two(&self) -> Option<impl text::IntoFragment<'_>> {
         self.album_line()
     }
 
-    fn textrow_three<'a>(&'a self) -> Option<impl text::IntoFragment<'a>> {
+    fn textrow_three(&self) -> Option<impl text::IntoFragment<'_>> {
         Some(self.artist())
     }
 
