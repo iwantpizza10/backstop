@@ -671,7 +671,7 @@ impl BackstopApp {
 
                 if state.peeking_queue {
                     let mut content_col = column![
-                        text("Queue (Next 3)")
+                        text("Queue (Next 5)")
                             .size(36),
                         space().height(4)
                     ].spacing(4)
@@ -680,11 +680,14 @@ impl BackstopApp {
                     if let Some(q) = &state.queue {
                         let peek = q.peek()
                             .iter()
-                            .filter_map(|x| x.clone())
+                            .map(|item|
+                                item.clone().map_or("-".to_string(), |x|
+                                    format!("{} - {}", x.artist(), x.title())
+                                ))
                             .collect::<Vec<_>>();
 
                         for i in peek {
-                            content_col = content_col.push(text!("{} - {}", i.artist(), i.title()));
+                            content_col = content_col.push(text(i));
                         }
                     }
 
@@ -771,14 +774,14 @@ impl BackstopApp {
         "Backstop".to_string()
     }
 
-    fn theme(&self) -> Option<Theme> {
-        Some(Theme::custom("Backstop Theme", Palette {
+    fn theme(&self) -> Theme {
+        Theme::custom("Backstop Theme", Palette {
             background: color_from_hex!("#0b071b"),
             text: color_from_hex!("#ffffff"),
             primary: color_from_hex!("#4b0fa3"),
             success: color_from_hex!("#7221ea"),
             warning: Color::from_rgb8(255,255,255),
             danger: Color::from_rgb8(255,255,255),
-        }))
+        })
     }
 }

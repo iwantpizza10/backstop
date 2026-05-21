@@ -20,3 +20,23 @@ serde-binary = "0.5.0"
 serde_repr = "0.1.20"
 tokio = { version = "1.52.1", features = ["macros"] }
 uuid = { version = "1.23.1", features = ["v4"] }
+
+[lints.clippy]
+allow_attributes = "warn"
+branches_sharing_code = "warn"
+cargo_common_metadata = "deny"
+case_sensitive_file_extension_comparisons = "warn"
+cast_lossless = "warn"
+clone_on_ref_ptr = "warn"
+collapsible_else_if = "warn"
+collection_is_never_read = "warn"
+comparison_chain = "warn"
+elidable_lifetime_names = "warn"
+filetype_is_file = "warn"
+implicit_clone = "warn"
+manual_instant_elapsed = "warn"
+needless_collect = "warn"
+search_is_some = "warn"
+todo = "warn"
+unnecessary_semicolon = "warn"
+unnecessary_wraps = "warn"

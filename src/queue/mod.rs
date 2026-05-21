@@ -68,12 +68,14 @@ impl Queue {
         }
     }
 
-    /// returns the next 3 songs in the queue
+    /// returns the next 5 songs in the queue
     pub fn peek(&self) -> Vec<Option<Arc<SongFileInfo>>> {
         vec![
             self.songs.get(self.position + 1).map(Arc::clone),
             self.songs.get(self.position + 2).map(Arc::clone),
             self.songs.get(self.position + 3).map(Arc::clone),
+            self.songs.get(self.position + 4).map(Arc::clone),
+            self.songs.get(self.position + 5).map(Arc::clone),
         ]
     }
 
