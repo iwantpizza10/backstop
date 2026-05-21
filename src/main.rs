@@ -685,9 +685,13 @@ impl BackstopApp {
                                     format!("{} - {}", x.artist(), x.title())
                                 ))
                             .collect::<Vec<_>>();
-
+                        
                         for i in peek {
                             content_col = content_col.push(text(i));
+                        }
+                    } else {
+                        for _ in 0..5 {
+                            content_col = content_col.push(text("-"));
                         }
                     }
 

@@ -3,7 +3,7 @@ name = "backstop"
 description = "a desktop music player built w/ rust"
 repository = "https://github.com/iwantpizza10/backstop"
 license = "MIT"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2024"
 
 [dependencies]
