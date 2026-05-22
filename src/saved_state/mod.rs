@@ -1,8 +1,11 @@
+use async_fs::create_dir_all;
+
 pub mod media_cache;
 pub mod settings;
 pub mod song_file_info;
 
 use crate::BackstopError;
+use crate::constants::conf_dir;
 use crate::saved_state::media_cache::MediaCache;
 use crate::saved_state::settings::BackstopSettings;
 
@@ -14,6 +17,13 @@ pub struct SavedState {
 
 impl SavedState {
     pub async fn load() -> Result<Self, BackstopError> {
+        let mut path = conf_dir();
+        path.push("covers");
+        
+        if let Err(_) = create_dir_all(path).await {
+            return Err(BackstopError::LoadingError);
+        }
+
         let settings = BackstopSettings::load();
         let media_cache = MediaCache::load();
 

@@ -1,12 +1,12 @@
 use std::time::Duration;
 use color_from_hex::color_from_hex;
-use iced::{Background, Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, column, container, image::Handle, mouse_area, progress_bar, row, slider, space, text}};
+use iced::{Background, Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, column, container, image::Handle, mouse_area, progress_bar, row, slider, space, text, tooltip::Position}};
 
 use crate::{AppState, EventMessage, PlayingState};
 use crate::constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
 use crate::menu_view::MenuView;
 use crate::svg_button::button_style;
-use crate::make_svg_button;
+use crate::{make_svg_button, tooltip_gen};
 
 pub struct Footer {}
 
@@ -90,24 +90,24 @@ fn center_nav(state: &AppState) -> Element<'_, EventMessage> {
             .spacing(16)
             .align_y(Vertical::Center),
         row![
-            make_svg_button!(include_bytes!("../assets/icons/eraser.svg"), EventMessage::ClearQueue, 48)
-                .style(|a, b| button_style(a, b, false)),
-            make_svg_button!(include_bytes!("../assets/icons/shuffle.svg"), EventMessage::ToggleShuffle, 48)
-                .style(|a, b| button_style(a, b, state.saved_state.settings.get_shuffle())),
-            make_svg_button!(include_bytes!("../assets/icons/arrow-big-left-dash.svg"), EventMessage::PrevTrack, 48)
-                .style(|a, b| button_style(a, b, false)),
-            if state.playing == PlayingState::Playing {
+            tooltip_gen!(make_svg_button!(include_bytes!("../assets/icons/eraser.svg"), EventMessage::ClearQueue, 48)
+                .style(|a, b| button_style(a, b, false)), "Stop Playing", Position::Top),
+            tooltip_gen!(make_svg_button!(include_bytes!("../assets/icons/shuffle.svg"), EventMessage::ToggleShuffle, 48)
+                .style(|a, b| button_style(a, b, state.saved_state.settings.get_shuffle())), "Toggle Shuffle", Position::Top),
+            tooltip_gen!(make_svg_button!(include_bytes!("../assets/icons/arrow-big-left-dash.svg"), EventMessage::PrevTrack, 48)
+                .style(|a, b| button_style(a, b, false)), "Previous Track", Position::Top),
+            tooltip_gen!(if state.playing == PlayingState::Playing {
                 make_svg_button!(include_bytes!("../assets/icons/pause.svg"), EventMessage::PlayPause, 48)
             } else {
                 make_svg_button!(include_bytes!("../assets/icons/play.svg"), EventMessage::PlayPause, 48)
             }
-                .style(|a, b| button_style(a, b, false)),
-            make_svg_button!(include_bytes!("../assets/icons/arrow-big-right-dash.svg"), EventMessage::NextTrack, 48)
-                .style(|a, b| button_style(a, b, false)),
-            make_svg_button!(include_bytes!("../assets/icons/repeat.svg"), EventMessage::ToggleRepeat, 48)
-                .style(|a, b| button_style(a, b, state.saved_state.settings.get_repeat())),
-            make_svg_button!(include_bytes!("../assets/icons/list-plus.svg"), EventMessage::ToggleQueuePeek, 48)
-                .style(|a, b| button_style(a, b, state.peeking_queue)),
+                .style(|a, b| button_style(a, b, false)), "Pause/Play", Position::Top),
+            tooltip_gen!(make_svg_button!(include_bytes!("../assets/icons/arrow-big-right-dash.svg"), EventMessage::NextTrack, 48)
+                .style(|a, b| button_style(a, b, false)), "Next Track", Position::Top),
+            tooltip_gen!(make_svg_button!(include_bytes!("../assets/icons/repeat.svg"), EventMessage::ToggleRepeat, 48)
+                .style(|a, b| button_style(a, b, state.saved_state.settings.get_repeat())), "Toggle Repeat", Position::Top),
+            tooltip_gen!(make_svg_button!(include_bytes!("../assets/icons/list-plus.svg"), EventMessage::ToggleQueuePeek, 48)
+                .style(|a, b| button_style(a, b, state.peeking_queue)), "Peek Queue", Position::Top),
         ]
             .spacing(8),
     ]
