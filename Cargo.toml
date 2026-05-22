@@ -24,6 +24,9 @@ serde_repr = "0.1.20"
 tokio = { version = "1.52.1", features = ["macros"] }
 uuid = { version = "1.23.1", features = ["v4"] }
 
+[build-dependencies]
+winresource = { version = "0.1.31", default-features = false }
+
 [lints.clippy]
 allow_attributes = "warn"
 branches_sharing_code = "warn"
