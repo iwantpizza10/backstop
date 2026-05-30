@@ -20,7 +20,7 @@ impl SavedState {
         let mut path = conf_dir();
         path.push("covers");
         
-        if let Err(_) = create_dir_all(path).await {
+        if create_dir_all(path).await.is_err() {
             return Err(BackstopError::LoadingError);
         }
 

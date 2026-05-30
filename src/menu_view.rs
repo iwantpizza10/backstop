@@ -86,10 +86,16 @@ impl MenuView {
 
             Self::CoverArtView => {
                 if let Some(cur_song) = &state.current_song {
-                    let cover_path = cur_song.file_info.cover.as_ref().unwrap().to_string_lossy().to_string();
+                    let cover_img;
+
+                    if let Some(path) = cur_song.file_info.cover.as_ref() {
+                        cover_img = img(path.to_string_lossy().to_string());
+                    } else {
+                        cover_img = img(assets.cover.clone());
+                    }
 
                     let mut col = column![
-                        img(cover_path).height(384).width(384),
+                        cover_img.height(384).width(384),
                         space().height(16),
                         text(cur_song.file_info.title())
                             .size(36),
