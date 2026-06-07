@@ -13,7 +13,7 @@ use iced::theme::Palette;
 use iced::widget::image::Handle;
 use iced::widget::{button, center, column, container, mouse_area, opaque, row, space, stack, text};
 use iced::window::icon;
-use iced::{Alignment, Border, Color, Element, Event, Length, Shadow, Size, Subscription, Task, Theme, event, keyboard, time, window};
+use iced::{Alignment, Border, Color, Element, Event, Length, Point, Shadow, Size, Subscription, Task, Theme, event, keyboard, time, window};
 
 mod discord_rpc;
 mod saved_state;
@@ -68,6 +68,7 @@ enum EventMessage {
     KeyboardModifiersChanged(Modifiers),
     UpdatePlaybackPosition,
     UpdateRPCTextInput(String),
+    UpdateSeekMousePos(Point),
     ClearCache,
     ClearSettings,
 
@@ -95,6 +96,7 @@ enum EventMessage {
     ToggleShuffle,
     ToggleRepeat,
     ClearQueue,
+    Seek,
 
     // state settings
     SetVolume(i32),
@@ -162,6 +164,7 @@ struct AppState {
     peeking_queue: bool,
     keyboard_modifiers: Modifiers,
     rpc_text_input: String,
+    seek_mouse_pos: f32,
 }
 
 impl TryFrom<SavedState> for AppState {
@@ -186,6 +189,7 @@ impl TryFrom<SavedState> for AppState {
                 peeking_queue: false,
                 keyboard_modifiers: Modifiers::NONE,
                 rpc_text_input: String::new(),
+                seek_mouse_pos: 0.0,
             })
         } else {
             Err(BackstopError::Loading)
@@ -301,7 +305,11 @@ impl BackstopApp {
 
                     EventMessage::UpdateRPCTextInput(text) => {
                         state.rpc_text_input = text;
-                    }
+                    },
+
+                    EventMessage::UpdateSeekMousePos(point) => {
+                        state.seek_mouse_pos = point.x / 276.0; // width of the progress_bar in footer.rs (l87 as of writing)
+                    },
 
                     // library/index stuff
 
@@ -563,6 +571,12 @@ impl BackstopApp {
                         state.current_song = None;
                         state.playing = PlayingState::NotPlaying;
                         state.player.clear();
+                    },
+
+                    EventMessage::Seek => {
+                        if state.playing != PlayingState::NotPlaying {
+                            state.player.seek(state.seek_mouse_pos);
+                        }
                     },
 
                     // discord rpc

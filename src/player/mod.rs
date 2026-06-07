@@ -108,4 +108,13 @@ impl Player {
         self.current_duration = Some(Duration::ZERO);
         self.audio_player.clear();
     }
+
+    /// seeks to the position indicated by `pos_frac`,
+    /// where 1 is the end of the song and 0 is the start
+    pub fn seek(&self, pos_frac: f32) {
+        let pos_nanos = self.get_duration().as_nanos() as f32 * pos_frac;
+        let pos = Duration::from_nanos_u128(pos_nanos as u128);
+
+        let _ = self.audio_player.try_seek(pos);
+    }
 }

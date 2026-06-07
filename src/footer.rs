@@ -1,6 +1,6 @@
 use std::time::Duration;
 use color_from_hex::color_from_hex;
-use iced::{Background, Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, column, container, image::Handle, mouse_area, progress_bar, row, slider, space, text, tooltip::Position}};
+use iced::{Background, Element, Length, alignment::{Horizontal, Vertical}, widget::{Column, Image, Row, column, container, image::Handle, mouse_area, progress_bar, row, slider, space, text, tooltip::{self, Position}}};
 
 use crate::{AppState, EventMessage, PlayingState};
 use crate::constants::{SPEED_STEPS, VOLUME_DYNAMIC_RANGE_DB};
@@ -80,11 +80,17 @@ fn center_nav(state: &AppState) -> Element<'_, EventMessage> {
     let timestamp_one = duration_to_string(state.player.get_pos());
     let timestamp_two = duration_to_string(state.player.get_duration());
 
+    let pos_nanos = state.player.get_duration().as_nanos() as f32 * state.seek_mouse_pos;
+    let pos = Duration::from_nanos_u128(pos_nanos as u128);
+    let seek_timestamp = duration_to_string_ms(pos);
+
     column![
         row![
             text!("{}", timestamp_one),
-            progress_bar(0.0..=state.player.get_duration().as_millis() as f32, state.player.get_pos().as_millis() as f32)
-                .girth(8),
+            tooltip_gen!(mouse_area(progress_bar(0.0..=state.player.get_duration().as_millis() as f32, state.player.get_pos().as_millis() as f32)
+                .girth(8).length(276))
+                .on_move(EventMessage::UpdateSeekMousePos)
+                .on_press(EventMessage::Seek), text!("{}", seek_timestamp), tooltip::Position::FollowCursor),
             text!("{}", timestamp_two),
         ]
             .spacing(16)
@@ -138,7 +144,13 @@ fn right_nav(state: &AppState) -> Element<'_, EventMessage> {
 
 fn duration_to_string(dur: Duration) -> String {
     let minutes = dur.as_secs() / 60;
-    let seconds = dur.as_secs() - (minutes * 60);
+    let seconds = dur.as_secs() % 60;
 
     format!("{:02}:{:02}", minutes, seconds)
+}
+
+fn duration_to_string_ms(dur: Duration) -> String {
+    let msec = dur.as_millis() % 1000;
+
+    format!("{}.{:03}", duration_to_string(dur), msec)
 }
