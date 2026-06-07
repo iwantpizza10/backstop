@@ -21,7 +21,7 @@ impl SavedState {
         path.push("covers");
         
         if create_dir_all(path).await.is_err() {
-            return Err(BackstopError::LoadingError);
+            return Err(BackstopError::Loading);
         }
 
         let settings = BackstopSettings::load();
@@ -33,7 +33,7 @@ impl SavedState {
                 media_cache,
             })
         } else {
-            Err(BackstopError::LoadingError)
+            Err(BackstopError::Loading)
         }
     }
 }

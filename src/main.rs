@@ -108,16 +108,16 @@ enum EventMessage {
 
 #[derive(Clone, Debug)]
 enum BackstopError {
-    PlaybackError,
-    LoadingError,
+    Playback,
+    Loading,
 }
 
 impl BackstopError {
     /// describes when an error might've occurred
     fn when(&self) -> &str {
         match self {
-            Self::PlaybackError => "during playback",
-            Self::LoadingError => "during loading",
+            Self::Playback => "during playback",
+            Self::Loading => "during loading",
         }
     }
 }
@@ -188,7 +188,7 @@ impl TryFrom<SavedState> for AppState {
                 rpc_text_input: String::new(),
             })
         } else {
-            Err(BackstopError::LoadingError)
+            Err(BackstopError::Loading)
         }
     }
 }
@@ -226,7 +226,7 @@ impl BackstopApp {
 
                             *self = Self::Loaded(loaded);
                         } else {
-                            *self = Self::Error(BackstopError::LoadingError);
+                            *self = Self::Error(BackstopError::Loading);
                         }
 
                         return Task::done(EventMessage::WindowResize(Size { width: 1692.0, height: 768.0 }))

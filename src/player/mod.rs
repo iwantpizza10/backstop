@@ -49,7 +49,7 @@ impl Player {
         let file = if let Ok(file) = file {
             file
         } else {
-            return Err(BackstopError::PlaybackError);
+            return Err(BackstopError::Playback);
         };
 
         let source = Decoder::try_from(file);
@@ -57,7 +57,7 @@ impl Player {
         let source = if let Ok(source) = source {
             source
         } else {
-            return Err(BackstopError::PlaybackError);
+            return Err(BackstopError::Playback);
         };
 
         self.current_duration = source.total_duration();
