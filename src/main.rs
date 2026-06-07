@@ -20,6 +20,7 @@ mod saved_state;
 mod constants;
 mod player;
 mod queue;
+mod update_checker;
 
 mod menu_view;
 mod navbar;
@@ -71,9 +72,11 @@ enum EventMessage {
     UpdateSeekMousePos(Point),
     ClearCache,
     ClearSettings,
+    DownloadUpdate,
 
     // app init stuff
     Loaded(Result<SavedState, BackstopError>),
+    HasUpdate(bool),
 
     // library/index stuff
     TriggerAddMediaDir,
@@ -165,6 +168,7 @@ struct AppState {
     keyboard_modifiers: Modifiers,
     rpc_text_input: String,
     seek_mouse_pos: f32,
+    has_update: bool,
 }
 
 impl TryFrom<SavedState> for AppState {
@@ -190,6 +194,7 @@ impl TryFrom<SavedState> for AppState {
                 keyboard_modifiers: Modifiers::NONE,
                 rpc_text_input: String::new(),
                 seek_mouse_pos: 0.0,
+                has_update: false,
             })
         } else {
             Err(BackstopError::Loading)
@@ -234,6 +239,7 @@ impl BackstopApp {
                         }
 
                         return Task::done(EventMessage::WindowResize(Size { width: 1692.0, height: 768.0 }))
+                            .chain(Task::perform(update_checker::check_for_updates(), EventMessage::HasUpdate))
                     },
 
                     EventMessage::ClearCache => {
@@ -309,6 +315,16 @@ impl BackstopApp {
 
                     EventMessage::UpdateSeekMousePos(point) => {
                         state.seek_mouse_pos = point.x / 276.0; // width of the progress_bar in footer.rs (l87 as of writing)
+                    },
+
+                    EventMessage::DownloadUpdate => {
+                        let _ = open::that("https://github.com/iwantpizza10/backstop/releases");
+                    },
+
+                    // app init stuff
+
+                    EventMessage::HasUpdate(upd) => {
+                        state.has_update = upd;
                     },
 
                     // library/index stuff
@@ -626,9 +642,11 @@ impl BackstopApp {
             },
             Self::Error(err) => {
                 match message {
+                    EventMessage::DoNothing => {},
                     EventMessage::WindowResize(_) => {},
                     EventMessage::KeyboardModifiersChanged(_) => {},
                     EventMessage::UpdatePlaybackPosition => {},
+                    EventMessage::HasUpdate(_) => {},
 
                     EventMessage::ClearCache => {
                         let _ = MediaCache::unsave();
@@ -728,6 +746,41 @@ impl BackstopApp {
                             }
                         }))
                         .on_press(EventMessage::ToggleQueuePeek)
+                    );
+                } else if state.has_update {
+                    let content_col = column![
+                        text("New Version of Backstop")
+                            .size(36),
+                        text("A new version of Backstop is available."),
+                        space().height(16),
+                        row![
+                            button("Download").on_press(EventMessage::DownloadUpdate),
+                            button("Ignore").on_press(EventMessage::HasUpdate(false)),
+                        ]
+                            .spacing(16),
+                    ]
+                        .spacing(4)
+                        .align_x(Horizontal::Center);
+
+                    area = opaque(
+                        mouse_area(center(container(content_col).style(|_| {
+                            container::Style {
+                                text_color: Some(Color::WHITE),
+                                background: Some(color_from_hex!("#170f37").into()),
+                                border: Border::default().color(Color::WHITE).width(1).rounded(15),
+                                shadow: Shadow::default(),
+                                snap: false,
+                            }
+                        }).padding(16)).style(|_| {
+                            container::Style {
+                                background: Some(Color {
+                                    a: 0.75,
+                                    ..Color::BLACK
+                                }.into()),
+                                ..container::Style::default()
+                            }
+                        }))
+                        .on_press(EventMessage::HasUpdate(false))
                     );
                 } else {
                     area = space().into();
