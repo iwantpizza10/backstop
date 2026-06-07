@@ -90,7 +90,7 @@ fn center_nav(state: &AppState) -> Element<'_, EventMessage> {
             tooltip_gen!(mouse_area(progress_bar(0.0..=state.player.get_duration().as_millis() as f32, state.player.get_pos().as_millis() as f32)
                 .girth(8).length(276))
                 .on_move(EventMessage::UpdateSeekMousePos)
-                .on_press(EventMessage::Seek), text!("{}", seek_timestamp), tooltip::Position::FollowCursor),
+                .on_press(EventMessage::Seek), text!("{}", seek_timestamp), tooltip::Position::Top),
             text!("{}", timestamp_two),
         ]
             .spacing(16)
