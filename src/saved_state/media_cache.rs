@@ -205,9 +205,13 @@ impl MediaCache {
     pub fn sort(&mut self, sort_type: CacheSortType) {
         match sort_type {
             CacheSortType::ArtistAlphabetical => {
+                // additional + opposite sort is to ensure consistent ordering,
+                // especially when switching SongsViewTypes
+                self.apparent_songs.sort_by_key(|a| a.title().to_lowercase());
                 self.apparent_songs.sort_by_key(|a| a.artist().to_lowercase());
             },
             CacheSortType::TitleAlphabetical => {
+                self.apparent_songs.sort_by_key(|a| a.artist().to_lowercase());
                 self.apparent_songs.sort_by_key(|a| a.title().to_lowercase());
             },
         }
