@@ -308,8 +308,8 @@ impl MediaCache {
             .map(Arc::clone)
             .collect::<Vec<_>>();
 
-        self.albums.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        self.artists.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        self.albums.sort_by_key(|a| a.name.to_lowercase());
+        self.artists.sort_by_key(|a| a.name.to_lowercase());
     }
 }
 
