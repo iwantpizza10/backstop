@@ -547,10 +547,25 @@ impl BackstopApp {
                                 q.unshuffle();
                             }
                         }
+                        
+                        let settings_two = state.saved_state.settings.clone();
+                        
+                        return Task::future(async move {
+                            let _ = settings_two.clone().save().await;
+
+                            EventMessage::DoNothing
+                        });
                     },
 
                     EventMessage::ToggleRepeat => {
                         state.saved_state.settings.toggle_repeat();
+                        let settings_two = state.saved_state.settings.clone();
+
+                        return Task::future(async move {
+                            let _ = settings_two.clone().save().await;
+
+                            EventMessage::DoNothing
+                        });
                     },
 
                     // state settings
@@ -696,7 +711,7 @@ impl BackstopApp {
                 let content = column![
                     row![
                         Navbar::view(state),
-                        state.menu_view.view(state)
+                        state.menu_view.view(state),
                     ],
                     Footer::view(state),
                 ];
