@@ -122,7 +122,7 @@ impl MenuView {
 
                     // add last song
                     if let Some(song) = &queue.peek_reverse()[0] {
-                        row = row.push(generate(192, song.clone())
+                        row = row.push(generate(192, Arc::clone(song))
                             .align_x(Horizontal::Center)
                             .width(Length::Fill));
                     } else {
@@ -141,13 +141,13 @@ impl MenuView {
                     }
 
                     // add current song
-                    row = row.push(generate(384, cur_song.file_info.clone())
+                    row = row.push(generate(384, Arc::clone(&cur_song.file_info))
                         .align_x(Horizontal::Center)
                         .width(Length::Fill));
 
                     // add next song
                     if let Some(song) = &queue.peek()[0] {
-                        row = row.push(generate(192, song.clone())
+                        row = row.push(generate(192, Arc::clone(song))
                             .align_x(Horizontal::Center)
                             .width(Length::Fill));
                     } else {
