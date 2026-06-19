@@ -115,10 +115,20 @@ impl DiscordRpc {
         self.current_song_artist = None;
         self.current_song_title = None;
         self.song_start_time = None;
-        self.is_clear = true;
 
         if let Some(client) = &mut self.rpc_client {
-            client.clear_activity()?;
+            let attempt = client.clear_activity();
+
+            if attempt.is_err() {
+                if client.reconnect().is_ok() {
+                    client.clear_activity()?;
+                    self.is_clear = true;
+                } else {
+                    return attempt;
+                }
+            } else {
+                self.is_clear = true;
+            }
         }
 
         Ok(())
@@ -148,8 +158,17 @@ impl DiscordRpc {
                 .buttons(vec![ button ])
                 .assets(image);
 
-            client.set_activity(activity)?;
-            self.is_clear = false;
+            let x = client.set_activity(activity.clone());
+
+            if x.is_err() {
+                if client.reconnect().is_ok() {
+                    client.set_activity(activity)?;
+                } else {
+                    return x.map(|_| Some(()));
+                }
+            } else {
+                self.is_clear = false;
+            }
 
             return Ok(Some(()))
         }
