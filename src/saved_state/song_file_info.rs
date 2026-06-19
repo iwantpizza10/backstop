@@ -44,6 +44,10 @@ impl SongFileInfo {
         instance
     }
 
+    pub fn empty() -> Self {
+        Self::new(" - No Song.".into())
+    }
+
     fn guess_fields(&mut self) {
         let name = self.path.file_name().and_then(|x| x.to_str());
         let extension = self.path.extension().and_then(|x| x.to_str());

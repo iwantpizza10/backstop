@@ -79,6 +79,17 @@ impl Queue {
         ]
     }
 
+    /// returns the last 5 songs in the queue, most recent first
+    pub fn peek_reverse(&self) -> Vec<Option<Arc<SongFileInfo>>> {
+        vec![
+            if self.position >= 1 { self.songs.get(self.position - 1).map(Arc::clone) } else { None },
+            if self.position >= 2 { self.songs.get(self.position - 2).map(Arc::clone) } else { None },
+            if self.position >= 3 { self.songs.get(self.position - 3).map(Arc::clone) } else { None },
+            if self.position >= 4 { self.songs.get(self.position - 4).map(Arc::clone) } else { None },
+            if self.position >= 5 { self.songs.get(self.position - 5).map(Arc::clone) } else { None },
+        ]
+    }
+
     /// shuffles the queue
     pub fn shuffle(&mut self) {
         let current_song = Arc::clone(&self.songs[self.position]);

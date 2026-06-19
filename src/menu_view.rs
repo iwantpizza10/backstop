@@ -1,9 +1,9 @@
 use std::{rc::Rc, sync::Arc};
 use color_from_hex::color_from_hex;
-use iced::{Background, Border, Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, container, image::Handle, mouse_area, pick_list, row, scrollable, space, text, text_input}};
+use iced::{Alignment, Background, Border, Element, Length, alignment::{Horizontal, Vertical}, widget::{Image, Row, button, column, container, image::Handle, mouse_area, pick_list, row, scrollable, space, stack, text, text_input}};
 use iced::widget::image as img;
 
-use crate::{AppAssets, AppState, EventMessage, SongsViewType, clip, discord_rpc::DiscordRpcMode};
+use crate::{AppAssets, AppState, EventMessage, SongsViewType, clip, discord_rpc::DiscordRpcMode, saved_state::song_file_info::SongFileInfo};
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub enum MenuView {
@@ -86,42 +86,91 @@ impl MenuView {
 
             Self::CoverArtView => {
                 if let Some(cur_song) = &state.current_song {
-                    let cover_img;
+                    let generate = |height: u32, song_info: Arc<SongFileInfo>| {
+                        let mut col = column![];
+                        let image;
 
-                    if let Some(path) = cur_song.file_info.cover.as_ref() {
-                        cover_img = img(path.to_string_lossy().to_string());
-                    } else {
-                        cover_img = img(assets.cover.clone());
-                    }
+                        if let Some(path) = song_info.cover.as_ref() {
+                            image = img(path.to_string_lossy().to_string());
+                        } else {
+                            image = img(assets.cover.clone());
+                        }
 
-                    let mut col = column![
-                        cover_img.height(384).width(384),
-                        space().height(16),
-                        text(cur_song.file_info.title())
-                            .size(36),
-                    ];
+                        col = col.push(image.height(height).width(height));
+                        col = col.push(space().height(if height == 384 { 16 } else { 8 }));
+                        col = col.push(text(song_info.title())
+                            .align_x(Alignment::Center)
+                            .size(if height == 384 { 36 } else { 24 }));
 
-                    col = col.push(space().height(4));
+                        if height == 384 {
+                            col = col.push(space().height(4));
+                        }
 
-                    if let Some(line) = cur_song.file_info.album_line() {
-                        col = col.push(text(line)
-                            .size(18));
-                    }
+                        if let Some(line) = song_info.album_line() {
+                            col = col.push(text(line)
+                                .size(if height == 384 { 18 } else { 12 }));
+                        }
 
-                    col = col.push(text(cur_song.file_info.artist())
-                        .size(18));
+                        col = col.push(text(song_info.artist())
+                            .size(if height == 384 { 18 } else { 12 }));
 
-                    row![
                         col
+                    };
+
+                    let queue = state.queue.as_ref().expect("somehow playing song without queue???");
+                    let mut row = row![];
+
+                    // add last song
+                    if let Some(song) = &queue.peek_reverse()[0] {
+                        row = row.push(generate(192, song.clone())
                             .align_x(Horizontal::Center)
-                            .width(Length::Fill),
-                    ]
+                            .width(Length::Fill));
+                    } else {
+                        row = row.push(stack(vec![
+                            generate(192, Arc::new(SongFileInfo::empty()))
+                                .align_x(Horizontal::Center)
+                                .width(Length::Fill)
+                                .into(),
+                            container(space().width(384).height(384)).style(|_| {
+                                container::Style {
+                                    background: Some(color_from_hex!("#0b071b").into()),
+                                    ..Default::default()
+                                }
+                            }).into()
+                        ]));
+                    }
+
+                    // add current song
+                    row = row.push(generate(384, cur_song.file_info.clone())
+                        .align_x(Horizontal::Center)
+                        .width(Length::Fill));
+
+                    // add next song
+                    if let Some(song) = &queue.peek()[0] {
+                        row = row.push(generate(192, song.clone())
+                            .align_x(Horizontal::Center)
+                            .width(Length::Fill));
+                    } else {
+                        row = row.push(stack(vec![
+                            generate(192, Arc::new(SongFileInfo::empty()))
+                                .align_x(Horizontal::Center)
+                                .width(Length::Fill)
+                                .into(),
+                            container(space().width(384).height(384)).style(|_| {
+                                container::Style {
+                                    background: Some(color_from_hex!("#0b071b").into()),
+                                    ..Default::default()
+                                }
+                            }).into()
+                        ]));
+                    }
+
+                    row
                         .align_y(Vertical::Center)
+                        .spacing(4)
                         .height(Length::Fill)
                 } else {
-                    row![
-                        text("how did we get here?"),
-                    ]
+                    row![]
                 }
             },
 
