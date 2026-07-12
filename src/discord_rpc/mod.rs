@@ -138,7 +138,14 @@ impl DiscordRpc {
     fn rpc(&mut self) -> Result<Option<()>, Error> {
         let allowed = self.can_show();
 
-        if let Some(client) = &mut self.rpc_client && allowed {
+        if let Some(client) = &mut self.rpc_client {
+            if !allowed {
+                client.clear_activity();
+                self.is_clear = true;
+
+                return Ok(None);
+            }
+
             let mut image = Assets::new().large_image(BACKSTOP_LOGO_URL);
             let timestamp = Timestamps::new().start(self.song_start_time.unwrap_or_default().timestamp());
             let button = Button::new("Get Backstop", BACKSTOP_REPO_URL);
