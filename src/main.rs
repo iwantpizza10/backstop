@@ -586,6 +586,7 @@ impl BackstopApp {
                     EventMessage::SetSpeed(speed_step) => {
                         state.saved_state.settings.set_speed(speed_step as f32 / (SPEED_STEPS / 2) as f32);
                         state.player.set_speed(state.saved_state.settings.get_speed());
+                        state.discord_rpc.update_current_speed(state.saved_state.settings.get_speed());
 
                         let settings_two = state.saved_state.settings.clone();
 

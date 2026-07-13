@@ -49,6 +49,7 @@ pub struct DiscordRpc {
     current_song_artist: Option<String>,
     song_start_time: Option<DateTime<Utc>>,
     playing_state: PlayingState,
+    current_speed: f32,
     rpc_client: Option<DiscordIpcClient>,
     is_clear: bool,
 }
@@ -63,6 +64,7 @@ impl DiscordRpc {
             current_song_artist: None,
             song_start_time: None,
             playing_state,
+            current_speed: settings.get_speed(),
             rpc_client: if settings.get_rpc_mode() != DiscordRpcMode::Disabled {
                     let mut client = DiscordIpcClient::new(DISCORD_APP_ID);
 
@@ -96,6 +98,13 @@ impl DiscordRpc {
     /// updates the playing state. will update the rpc data
     pub fn update_playing_state(&mut self, state: PlayingState) {
         self.playing_state = state;
+
+        let _ = self.rpc();
+    }
+
+    /// updates the playback speed. updates rpc data
+    pub fn update_current_speed(&mut self, speed: f32) {
+        self.current_speed = speed;
 
         let _ = self.rpc();
     }
@@ -140,7 +149,7 @@ impl DiscordRpc {
 
         if let Some(client) = &mut self.rpc_client {
             if !allowed {
-                client.clear_activity();
+                let _ = client.clear_activity();
                 self.is_clear = true;
 
                 return Ok(None);
@@ -155,10 +164,19 @@ impl DiscordRpc {
                 image = image.small_text("Paused");
             }
 
+            let title_thing = if self.current_speed == 1. {
+                self.current_song_title.clone().unwrap_or_default()
+            } else {
+                format!("{} ({}x speed)",
+                    self.current_song_title.clone().unwrap_or_default(),
+                    self.current_speed
+                )
+            };
+
             let activity = Activity::new()
                 .activity_type(ActivityType::Listening)
                 .name("Backstop")
-                .details(self.current_song_title.clone().unwrap_or_default())
+                .details(title_thing)
                 .state(self.current_song_artist.clone().unwrap_or_default())
                 .status_display_type(StatusDisplayType::Details)
                 .timestamps(timestamp)
