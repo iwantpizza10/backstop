@@ -167,9 +167,10 @@ impl DiscordRpc {
             let title_thing = if self.current_speed == 1. {
                 self.current_song_title.clone().unwrap_or_default()
             } else {
-                format!("{} ({}x speed)",
+                format!(
+                    "{} ({}x speed)",
                     self.current_song_title.clone().unwrap_or_default(),
-                    self.current_speed
+                    self.current_speed,
                 )
             };
 

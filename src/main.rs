@@ -851,10 +851,22 @@ impl BackstopApp {
 
     fn title(&self) -> String {
         if let Self::Loaded(state) = self && let Some(song) = &state.current_song {
+            let song_text = format!("{} - {}", song.file_info.artist(), song.file_info.title());
+
+            let song_text = if state.saved_state.settings.get_speed() == 1. {
+                song_text
+            } else {
+                format!(
+                    "{} ({}x speed)",
+                    song_text,
+                    state.saved_state.settings.get_speed(),
+                )
+            };
+
             if state.playing == PlayingState::Playing {
-                return format!("{} - {} | Backstop", song.file_info.artist(), song.file_info.title());
+                return format!("{} | Backstop", song_text);
             } else if state.playing == PlayingState::Paused {
-                return format!("{} - {} (paused) | Backstop", song.file_info.artist(), song.file_info.title());
+                return format!("{} (paused) | Backstop", song_text);
             }
         }
 
