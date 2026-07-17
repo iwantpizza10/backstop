@@ -247,7 +247,7 @@ impl MediaCache {
         }
     }
 
-    /// creates a new MediaCache by scanning the privided directories
+    /// creates a new MediaCache by scanning the provided directories
     pub async fn from_scan(dirs: HashSet<PathBuf>) -> Result<Self, io::Error> {
         let mut files_list: Vec<PathBuf> = vec![];
         let mut song_metadata: HashSet<Arc<SongFileInfo>> = HashSet::new();
