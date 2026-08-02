@@ -11,9 +11,8 @@ pub const BACKSTOP_PAUSE_ICON_URL: &str = "https://github.com/iwantpizza10/backs
 pub const BACKSTOP_LOGO_URL: &str = "https://github.com/iwantpizza10/backstop/blob/main/assets/backstopshort_square.png?raw=true";
 pub const BACKSTOP_REPO_URL: &str = "https://github.com/iwantpizza10/backstop/releases";
 pub const DISCORD_APP_ID: &str = "1483067786589765702";
-pub const MUSIC_EXTS: [&str; 6] = [
-    "mp3", "ogg", "flac", "m4a",
-    "aac", "wav",
+pub const MUSIC_EXTS: [&str; 2] = [
+    "mp3", "flac"
 ];
 
 #[cfg(target_os="linux")]

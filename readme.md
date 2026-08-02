@@ -45,14 +45,9 @@ On the right, there are two sliders, labelled "Gain" and "Speed." These change t
 From time to time, Backstop has an update. Upon launching the app, a notification may alert you to an update. There will be two options: download and ignore. These options are self-descriptive, the former opening [Backstop's releases page](https://github.com/iwantpizza10/backstop/releases), and the latter simply closing the menu.
 
 ## Formats
-Although not all of these have been fully tested, Backstop currently supports the following formats:
+Backstop currently supports the following formats:
 - mp3
-- ogg
 - flac
-- m4a
-- aac
-- wav
-- opus
 
 ## Contributions
 Any contributions are welcome! If you're willing to do some programming, feel free to submit a PR. Otherwise, if you've found a bug, have a feature request, or just need help using Backstop, go ahead and submit an issue if you'd like.
