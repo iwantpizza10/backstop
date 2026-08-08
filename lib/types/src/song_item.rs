@@ -1,14 +1,14 @@
-use chrono::{DateTime, Local};
+use lofty::tag::items::Timestamp;
 use uuid::Uuid;
-
-use crate::album::Album;
-use crate::artist::Artist;
 
 pub struct SongItem {
     pub title: Option<String>,
-    pub artist: Option<Vec<Artist>>,
-    pub date: Option<DateTime<Local>>,
-    pub track: Option<i32>,
-    pub album: Option<Album>,
+    pub artist_names: Option<Vec<String>>,
+    pub date: Option<Timestamp>,
+    pub genre: Option<String>,
+    pub track: Option<u32>,
+    pub total_tracks: Option<u32>,
+    pub album_name: Option<String>,
+    pub album_artists: Option<Vec<String>>,
     pub id: Uuid,
 }
