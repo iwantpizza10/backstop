@@ -1,6 +1,9 @@
 use image::ImageFormat;
 use lofty::{
-    file::TaggedFileExt, ogg::tag, picture::PictureType, probe::Probe, tag::{Accessor, ItemKey},
+    file::TaggedFileExt,
+    picture::PictureType,
+    probe::Probe,
+    tag::{Accessor, ItemKey},
 };
 use std::{io, path::PathBuf};
 use types::SongItem;
@@ -59,7 +62,7 @@ fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> Option<SongItem> {
         Err(x) => {
             eprintln!("lofty error: {x} (during read of {:?})", file);
             return None;
-        },
+        }
     }
 
     match file_probe.read() {
@@ -67,15 +70,18 @@ fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> Option<SongItem> {
         Err(x) => {
             eprintln!("lofty error: {x} (during read of {:?})", file);
             return None;
-        },
+        }
     }
 
     match tagged_file.first_tag() {
         Some(tag) => tags = tag,
         None => {
-            eprintln!("backstop error: first_tag not found (during read of {:?})", file);
+            eprintln!(
+                "backstop error: first_tag not found (during read of {:?})",
+                file
+            );
             return None;
-        },
+        }
     }
 
     let title = tags.title().map(|x| x.to_string());
@@ -174,9 +180,10 @@ mod tests {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(path).expect("should not error while discovering");
 
-        assert_eq!(files.len(), 2);
+        assert_eq!(files.len(), 3);
         assert_eq!(files[0].file_name(), Some(OsStr::new("beep_1.mp3")));
-        assert_eq!(files[1].file_name(), Some(OsStr::new("beep_2.flac")));
+        assert_eq!(files[1].file_name(), Some(OsStr::new("hello.txt")));
+        assert_eq!(files[2].file_name(), Some(OsStr::new("beep_2.flac")));
     }
 
     #[test]
@@ -198,10 +205,18 @@ mod tests {
     }
 
     #[test]
-    fn metadata_scans_flac() {
+    #[should_panic]
+    fn metadata_does_not_scan_txt() {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(path).expect("should not error while discovering");
         let beep_2 = scan_file_metadata(&files[1], false).unwrap();
+    }
+
+    #[test]
+    fn metadata_scans_flac() {
+        let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
+        let files = discover_files(path).expect("should not error while discovering");
+        let beep_2 = scan_file_metadata(&files[2], false).unwrap();
 
         assert_eq!(beep_2.title, Some("beep_2".to_string()));
         assert_eq!(beep_2.artist_names, Some(vec!["me".to_string()]));
