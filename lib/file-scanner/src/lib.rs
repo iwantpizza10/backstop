@@ -5,13 +5,13 @@ use lofty::{
     probe::Probe,
     tag::{Accessor, ItemKey},
 };
-use std::{fs::DirEntry, io, path::PathBuf};
+use std::{io, path::PathBuf};
 use types::SongItem;
 use uuid::Uuid;
 
-fn discover_files(dir: PathBuf) -> Result<Vec<DirEntry>, io::Error> {
+fn discover_files(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
     let scan = std::fs::read_dir(dir)?;
-    let mut results: Vec<DirEntry> = vec![];
+    let mut results: Vec<PathBuf> = vec![];
 
     for item in scan {
         let item = item?;
@@ -23,7 +23,7 @@ fn discover_files(dir: PathBuf) -> Result<Vec<DirEntry>, io::Error> {
 
             results.append(&mut recursive_scan);
         } else {
-            results.push(item);
+            results.push(item.path());
         }
     }
 
@@ -52,9 +52,8 @@ fn save_image_to_file(data: &[u8], id: Uuid) -> Result<(), image::ImageError> {
     Ok(())
 }
 
-// "one metadata please 🤓👆"
-fn scan_metadata_singular(file: &DirEntry, create_cover: bool) -> SongItem {
-    let tagged_file = Probe::open(file.path()).unwrap().read().unwrap();
+fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> SongItem {
+    let tagged_file = Probe::open(file).unwrap().read().unwrap();
     let tagged_file = tagged_file.first_tag().unwrap();
 
     let title = tagged_file.title().map(|x| x.to_string());
@@ -103,7 +102,6 @@ fn scan_metadata_singular(file: &DirEntry, create_cover: bool) -> SongItem {
     }
 
     let artist_names = process_items!(ItemKey::TrackArtist, ItemKey::TrackArtists, ", ");
-
     let album_artists = process_items!(ItemKey::AlbumArtist, ItemKey::AlbumArtists, ", ");
 
     if create_cover {
@@ -144,7 +142,7 @@ mod tests {
     use lofty::tag::items::Timestamp;
 
     use super::*;
-    use std::str::FromStr;
+    use std::{ffi::OsStr, str::FromStr};
 
     #[test]
     fn files_discover() {
@@ -152,15 +150,15 @@ mod tests {
         let files = discover_files(path).expect("should not error while discovering");
 
         assert_eq!(files.len(), 2);
-        assert_eq!(files[0].file_name(), "beep_1.mp3");
-        assert_eq!(files[1].file_name(), "beep_2.flac");
+        assert_eq!(files[0].file_name(), Some(OsStr::new("beep_1.mp3")));
+        assert_eq!(files[1].file_name(), Some(OsStr::new("beep_2.flac")));
     }
 
     #[test]
     fn metadata_scans_mp3() {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(path).expect("should not error while discovering");
-        let beep_1 = scan_metadata_singular(&files[0], false);
+        let beep_1 = scan_file_metadata(&files[0], false);
 
         assert_eq!(beep_1.title, Some("beep_1".to_string()));
         assert_eq!(
@@ -178,7 +176,7 @@ mod tests {
     fn metadata_scans_flac() {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(path).expect("should not error while discovering");
-        let beep_2 = scan_metadata_singular(&files[1], false);
+        let beep_2 = scan_file_metadata(&files[1], false);
 
         assert_eq!(beep_2.title, Some("beep_2".to_string()));
         assert_eq!(beep_2.artist_names, Some(vec!["me".to_string()]));
