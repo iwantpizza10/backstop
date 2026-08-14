@@ -9,7 +9,7 @@ use std::{io, path::PathBuf};
 use types::SongItem;
 use uuid::Uuid;
 
-fn discover_files(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
+fn discover_files(dir: &PathBuf) -> Result<Vec<PathBuf>, io::Error> {
     let scan = std::fs::read_dir(dir)?;
     let mut results: Vec<PathBuf> = vec![];
 
@@ -19,7 +19,7 @@ fn discover_files(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
         if let Ok(file_type) = item.file_type()
             && file_type.is_dir()
         {
-            let mut recursive_scan = discover_files(item.path())?;
+            let mut recursive_scan = discover_files(&item.path())?;
 
             results.append(&mut recursive_scan);
         } else {
@@ -53,36 +53,32 @@ fn save_image_to_file(data: &[u8], id: Uuid) -> Result<(), image::ImageError> {
 }
 
 fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> Option<SongItem> {
-    let file_probe;
-    let tagged_file;
-    let tags;
-
-    match Probe::open(file) {
-        Ok(probe) => file_probe = probe,
+    let file_probe = match Probe::open(file) {
+        Ok(probe) => probe,
         Err(x) => {
             eprintln!("lofty error: {x} (during read of {:?})", file);
             return None;
         }
-    }
+    };
 
-    match file_probe.read() {
-        Ok(file) => tagged_file = file,
+    let tagged_file = match file_probe.read() {
+        Ok(file) => file,
         Err(x) => {
             eprintln!("lofty error: {x} (during read of {:?})", file);
             return None;
         }
-    }
+    };
 
-    match tagged_file.first_tag() {
-        Some(tag) => tags = tag,
+    let tags = match tagged_file.first_tag() {
+        Some(tag) => tag,
         None => {
             eprintln!(
-                "backstop error: first_tag not found (during read of {:?})",
+                "lofty error: first_tag not found (during read of {:?})",
                 file
             );
             return None;
         }
-    }
+    };
 
     let title = tags.title().map(|x| x.to_string());
     let album_name = tags.album().map(|x| x.to_string());
@@ -129,7 +125,7 @@ fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> Option<SongItem> {
         }};
     }
 
-    let artist_names = process_items!(ItemKey::TrackArtist, ItemKey::TrackArtists, ", ");
+    let track_artists = process_items!(ItemKey::TrackArtist, ItemKey::TrackArtists, ", ");
     let album_artists = process_items!(ItemKey::AlbumArtist, ItemKey::AlbumArtists, ", ");
 
     if create_cover {
@@ -138,7 +134,7 @@ fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> Option<SongItem> {
                 if let Err(x) = save_image_to_file(i.data(), id) {
                     eprintln!(
                         "cover error: {x:?} (while saving \"{} - {}\", id {})",
-                        artist_names
+                        track_artists
                             .as_ref()
                             .map(|x| x.join(", "))
                             .unwrap_or("?".to_string()),
@@ -157,7 +153,7 @@ fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> Option<SongItem> {
 
     Some(SongItem {
         title,
-        artist_names,
+        track_artists,
         date,
         track,
         genre,
@@ -168,17 +164,42 @@ fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> Option<SongItem> {
     })
 }
 
+fn scan_dir_metadata(dir: &PathBuf, create_covers: bool) -> Vec<SongItem> {
+    let files = match discover_files(dir) {
+        Ok(x) => x,
+        Err(err) => {
+            eprintln!(
+                "io error: {err:?} (during read of {:?})",
+                dir
+            );
+            return vec![];
+        },
+    };
+
+    let mut songitems = vec![];
+
+    for file in files {
+        let metadata = scan_file_metadata(&file, create_covers);
+
+        match metadata {
+            Some(metadata) => songitems.push(metadata),
+            None => continue,
+        }
+    }
+
+    songitems
+}
+
 #[cfg(test)]
 mod tests {
     use lofty::tag::items::Timestamp;
-
     use super::*;
     use std::{ffi::OsStr, str::FromStr};
 
     #[test]
     fn files_discover() {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
-        let files = discover_files(path).expect("should not error while discovering");
+        let files = discover_files(&path).expect("should not error while discovering");
 
         assert_eq!(files.len(), 3);
         assert_eq!(files[0].file_name(), Some(OsStr::new("beep_1.mp3")));
@@ -189,12 +210,12 @@ mod tests {
     #[test]
     fn metadata_scans_mp3() {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
-        let files = discover_files(path).expect("should not error while discovering");
+        let files = discover_files(&path).expect("should not error while discovering");
         let beep_1 = scan_file_metadata(&files[0], false).unwrap();
 
         assert_eq!(beep_1.title, Some("beep_1".to_string()));
         assert_eq!(
-            beep_1.artist_names,
+            beep_1.track_artists,
             Some(vec!["me".to_string(), "my friend".to_string()])
         );
         assert_eq!(beep_1.date, Some(Timestamp::from_str("2026").unwrap()));
@@ -208,18 +229,18 @@ mod tests {
     #[should_panic]
     fn metadata_does_not_scan_txt() {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
-        let files = discover_files(path).expect("should not error while discovering");
+        let files = discover_files(&path).expect("should not error while discovering");
         let beep_2 = scan_file_metadata(&files[1], false).unwrap();
     }
 
     #[test]
     fn metadata_scans_flac() {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
-        let files = discover_files(path).expect("should not error while discovering");
+        let files = discover_files(&path).expect("should not error while discovering");
         let beep_2 = scan_file_metadata(&files[2], false).unwrap();
 
         assert_eq!(beep_2.title, Some("beep_2".to_string()));
-        assert_eq!(beep_2.artist_names, Some(vec!["me".to_string()]));
+        assert_eq!(beep_2.track_artists, Some(vec!["me".to_string()]));
         assert_eq!(
             beep_2.date,
             Some(Timestamp::from_str("2026-08-07").unwrap())
@@ -228,5 +249,14 @@ mod tests {
         assert_eq!(beep_2.total_tracks, Some(2));
         assert_eq!(beep_2.album_name, Some("the beeps".to_string()));
         assert_eq!(beep_2.album_artists, Some(vec!["me".to_string()]));
+    }
+
+    #[test]
+    fn metadata_scans_dir() {
+        let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
+        let scan = scan_dir_metadata(&path, false);
+
+        assert_eq!(scan.len(), 2);
+        // no more checks are needed because metadata_scans_(mp3|flac) covers it all
     }
 }
