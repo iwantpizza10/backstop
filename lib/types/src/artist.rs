@@ -1,9 +1,8 @@
 use uuid::Uuid;
 
-use crate::album::Album;
-
+#[derive(Debug)]
 pub struct Artist {
     pub name: Option<String>,
-    pub albums: Vec<Album>,
+    pub album_names: Vec<Option<String>>,
     pub tracks: Vec<Uuid>,
 }

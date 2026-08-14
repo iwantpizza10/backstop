@@ -1,9 +1,7 @@
 use uuid::Uuid;
 
-use crate::artist::Artist;
-
 pub struct Album {
     pub name: Option<String>,
-    pub artist: Option<Vec<Artist>>,
+    pub artist_names: Option<Vec<String>>,
     pub tracks: Vec<Uuid>,
 }

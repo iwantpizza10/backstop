@@ -5,8 +5,12 @@ use lofty::{
     probe::Probe,
     tag::{Accessor, ItemKey},
 };
-use std::{io, path::PathBuf};
-use types::SongItem;
+use std::{
+    collections::{HashMap, HashSet},
+    io,
+    path::PathBuf,
+};
+use types::{Album, Artist, SongItem};
 use uuid::Uuid;
 
 fn discover_files(dir: &PathBuf) -> Result<Vec<PathBuf>, io::Error> {
@@ -168,12 +172,9 @@ fn scan_dir_metadata(dir: &PathBuf, create_covers: bool) -> Vec<SongItem> {
     let files = match discover_files(dir) {
         Ok(x) => x,
         Err(err) => {
-            eprintln!(
-                "io error: {err:?} (during read of {:?})",
-                dir
-            );
+            eprintln!("io error: {err:?} (during read of {:?})", dir);
             return vec![];
-        },
+        }
     };
 
     let mut songitems = vec![];
@@ -190,10 +191,78 @@ fn scan_dir_metadata(dir: &PathBuf, create_covers: bool) -> Vec<SongItem> {
     songitems
 }
 
+fn scan_artists(items: &Vec<SongItem>) -> Vec<Artist> {
+    let mut artists: HashMap<Option<String>, Artist> = HashMap::new();
+
+    for item in items {
+        if let Some(track_artists) = &item.track_artists {
+            for track_artist in track_artists {
+                if let Some(artist) = artists.get_mut(&Some(track_artist.clone())) {
+                    artist.tracks.push(item.id);
+
+                    if let Some(album_artists) = item.album_artists.clone() {
+                        if album_artists.contains(&track_artist.clone())
+                            && !artist.album_names.contains(&item.album_name)
+                        {
+                            artist.album_names.push(item.album_name.clone());
+                        }
+                    }
+                } else {
+                    let mut artist = Artist {
+                        name: Some(track_artist.clone()),
+                        album_names: vec![],
+                        tracks: vec![item.id],
+                    };
+
+                    if let Some(album_artists) = item.album_artists.clone() {
+                        if album_artists.contains(&track_artist.clone())
+                            && !artist.album_names.contains(&item.album_name)
+                        {
+                            artist.album_names.push(item.album_name.clone());
+                        }
+                    }
+
+                    artists.insert(Some(track_artist.clone()), artist);
+                }
+            }
+        } else {
+            if let Some(artist) = artists.get_mut(&None) {
+                artist.tracks.push(item.id);
+
+                if let None = item.album_artists.clone() {
+                    if !artist.album_names.contains(&item.album_name) {
+                        artist.album_names.push(item.album_name.clone());
+                    }
+                }
+            } else {
+                let mut artist = Artist {
+                    name: None,
+                    album_names: vec![],
+                    tracks: vec![item.id],
+                };
+
+                if let None = item.album_artists.clone() {
+                    if !artist.album_names.contains(&item.album_name) {
+                        artist.album_names.push(item.album_name.clone());
+                    }
+                }
+
+                artists.insert(None, artist);
+            }
+        }
+    }
+
+    artists.into_values().collect()
+}
+
+fn scan_albums(items: &Vec<SongItem>) -> Vec<Album> {
+    todo!()
+}
+
 #[cfg(test)]
 mod tests {
-    use lofty::tag::items::Timestamp;
     use super::*;
+    use lofty::tag::items::Timestamp;
     use std::{ffi::OsStr, str::FromStr};
 
     #[test]
@@ -258,5 +327,18 @@ mod tests {
 
         assert_eq!(scan.len(), 2);
         // no more checks are needed because metadata_scans_(mp3|flac) covers it all
+    }
+
+    #[test]
+    fn scan_artists_from_dir_metadata() {
+        let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
+        let scan = scan_dir_metadata(&path, false);
+        let artists = scan_artists(&scan);
+        let the_one_track_uuid = artists[0].tracks[0];
+
+        assert_eq!(artists.len(), 2);
+        // not going to test more because i frankly don't feel like writing
+        // code to handle when the artists flip spots randomly due to hashsets
+        // being arbitrarily ordered when collected into Vec<_>s or whatever
     }
 }
