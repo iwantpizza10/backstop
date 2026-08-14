@@ -5,11 +5,7 @@ use lofty::{
     probe::Probe,
     tag::{Accessor, ItemKey},
 };
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-    path::PathBuf,
-};
+use std::{collections::HashMap, io, path::PathBuf};
 use types::{Album, Artist, SongItem};
 use uuid::Uuid;
 
@@ -191,7 +187,7 @@ fn scan_dir_metadata(dir: &PathBuf, create_covers: bool) -> Vec<SongItem> {
     songitems
 }
 
-fn scan_artists(items: &Vec<SongItem>) -> Vec<Artist> {
+fn scan_artists(items: &[SongItem]) -> Vec<Artist> {
     let mut artists: HashMap<Option<String>, Artist> = HashMap::new();
 
     for item in items {
@@ -200,12 +196,11 @@ fn scan_artists(items: &Vec<SongItem>) -> Vec<Artist> {
                 if let Some(artist) = artists.get_mut(&Some(track_artist.clone())) {
                     artist.tracks.push(item.id);
 
-                    if let Some(album_artists) = item.album_artists.clone() {
-                        if album_artists.contains(&track_artist.clone())
-                            && !artist.album_names.contains(&item.album_name)
-                        {
-                            artist.album_names.push(item.album_name.clone());
-                        }
+                    if let Some(album_artists) = item.album_artists.clone()
+                        && album_artists.contains(&track_artist.clone())
+                        && !artist.album_names.contains(&item.album_name)
+                    {
+                        artist.album_names.push(item.album_name.clone());
                     }
                 } else {
                     let mut artist = Artist {
@@ -214,12 +209,11 @@ fn scan_artists(items: &Vec<SongItem>) -> Vec<Artist> {
                         tracks: vec![item.id],
                     };
 
-                    if let Some(album_artists) = item.album_artists.clone() {
-                        if album_artists.contains(&track_artist.clone())
-                            && !artist.album_names.contains(&item.album_name)
-                        {
-                            artist.album_names.push(item.album_name.clone());
-                        }
+                    if let Some(album_artists) = item.album_artists.clone()
+                        && album_artists.contains(&track_artist.clone())
+                        && !artist.album_names.contains(&item.album_name)
+                    {
+                        artist.album_names.push(item.album_name.clone());
                     }
 
                     artists.insert(Some(track_artist.clone()), artist);
@@ -229,10 +223,8 @@ fn scan_artists(items: &Vec<SongItem>) -> Vec<Artist> {
             if let Some(artist) = artists.get_mut(&None) {
                 artist.tracks.push(item.id);
 
-                if let None = item.album_artists.clone() {
-                    if !artist.album_names.contains(&item.album_name) {
-                        artist.album_names.push(item.album_name.clone());
-                    }
+                if item.album_artists.is_none() && !artist.album_names.contains(&item.album_name) {
+                    artist.album_names.push(item.album_name.clone());
                 }
             } else {
                 let mut artist = Artist {
@@ -241,10 +233,8 @@ fn scan_artists(items: &Vec<SongItem>) -> Vec<Artist> {
                     tracks: vec![item.id],
                 };
 
-                if let None = item.album_artists.clone() {
-                    if !artist.album_names.contains(&item.album_name) {
-                        artist.album_names.push(item.album_name.clone());
-                    }
+                if item.album_artists.is_none() && !artist.album_names.contains(&item.album_name) {
+                    artist.album_names.push(item.album_name.clone());
                 }
 
                 artists.insert(None, artist);
@@ -255,7 +245,7 @@ fn scan_artists(items: &Vec<SongItem>) -> Vec<Artist> {
     artists.into_values().collect()
 }
 
-fn scan_albums(items: &Vec<SongItem>) -> Vec<Album> {
+fn scan_albums(items: &[SongItem]) -> Vec<Album> {
     todo!()
 }
 
