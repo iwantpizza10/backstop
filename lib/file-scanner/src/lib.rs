@@ -1,9 +1,6 @@
 use image::ImageFormat;
 use lofty::{
-    file::TaggedFileExt,
-    picture::PictureType,
-    probe::Probe,
-    tag::{Accessor, ItemKey},
+    file::TaggedFileExt, ogg::tag, picture::PictureType, probe::Probe, tag::{Accessor, ItemKey},
 };
 use std::{io, path::PathBuf};
 use types::SongItem;
@@ -52,22 +49,47 @@ fn save_image_to_file(data: &[u8], id: Uuid) -> Result<(), image::ImageError> {
     Ok(())
 }
 
-fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> SongItem {
-    let tagged_file = Probe::open(file).unwrap().read().unwrap();
-    let tagged_file = tagged_file.first_tag().unwrap();
+fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> Option<SongItem> {
+    let file_probe;
+    let tagged_file;
+    let tags;
 
-    let title = tagged_file.title().map(|x| x.to_string());
-    let album_name = tagged_file.album().map(|x| x.to_string());
-    let track = tagged_file.track();
-    let total_tracks = tagged_file.track_total();
-    let genre = tagged_file.genre().map(|x| x.to_string());
-    let date = tagged_file.date();
+    match Probe::open(file) {
+        Ok(probe) => file_probe = probe,
+        Err(x) => {
+            eprintln!("lofty error: {x} (during read of {:?})", file);
+            return None;
+        },
+    }
+
+    match file_probe.read() {
+        Ok(file) => tagged_file = file,
+        Err(x) => {
+            eprintln!("lofty error: {x} (during read of {:?})", file);
+            return None;
+        },
+    }
+
+    match tagged_file.first_tag() {
+        Some(tag) => tags = tag,
+        None => {
+            eprintln!("backstop error: first_tag not found (during read of {:?})", file);
+            return None;
+        },
+    }
+
+    let title = tags.title().map(|x| x.to_string());
+    let album_name = tags.album().map(|x| x.to_string());
+    let track = tags.track();
+    let total_tracks = tags.track_total();
+    let genre = tags.genre().map(|x| x.to_string());
+    let date = tags.date();
     let id = Uuid::new_v4();
 
     macro_rules! process_items {
         ($type_singular:expr, $type_plural:expr, $split_seq:expr) => {{
-            let items = tagged_file.get_strings($type_singular).collect::<Vec<_>>();
-            let items_more = tagged_file.get_strings($type_plural).collect::<Vec<_>>();
+            let items = tags.get_strings($type_singular).collect::<Vec<_>>();
+            let items_more = tags.get_strings($type_plural).collect::<Vec<_>>();
             let mut actual_items: Vec<String> = vec![];
             let ignore_results: bool;
 
@@ -105,11 +127,11 @@ fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> SongItem {
     let album_artists = process_items!(ItemKey::AlbumArtist, ItemKey::AlbumArtists, ", ");
 
     if create_cover {
-        for i in tagged_file.pictures() {
+        for i in tags.pictures() {
             if i.pic_type() == PictureType::CoverFront {
-                if save_image_to_file(i.data(), id).is_err() {
+                if let Err(x) = save_image_to_file(i.data(), id) {
                     eprintln!(
-                        "cover art for \"{} - {}\" (id {}) did not save!",
+                        "cover error: {x:?} (while saving \"{} - {}\", id {})",
                         artist_names
                             .as_ref()
                             .map(|x| x.join(", "))
@@ -119,12 +141,15 @@ fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> SongItem {
                     );
                 }
 
+                // note how we do NOT return `None` here cause not having a cover art still
+                // results in 100% listenable audio i hope for most people lmao
+
                 break;
             }
         }
     }
 
-    SongItem {
+    Some(SongItem {
         title,
         artist_names,
         date,
@@ -134,7 +159,7 @@ fn scan_file_metadata(file: &PathBuf, create_cover: bool) -> SongItem {
         album_name,
         album_artists,
         id,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -158,7 +183,7 @@ mod tests {
     fn metadata_scans_mp3() {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(path).expect("should not error while discovering");
-        let beep_1 = scan_file_metadata(&files[0], false);
+        let beep_1 = scan_file_metadata(&files[0], false).unwrap();
 
         assert_eq!(beep_1.title, Some("beep_1".to_string()));
         assert_eq!(
@@ -176,7 +201,7 @@ mod tests {
     fn metadata_scans_flac() {
         let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(path).expect("should not error while discovering");
-        let beep_2 = scan_file_metadata(&files[1], false);
+        let beep_2 = scan_file_metadata(&files[1], false).unwrap();
 
         assert_eq!(beep_2.title, Some("beep_2".to_string()));
         assert_eq!(beep_2.artist_names, Some(vec!["me".to_string()]));
