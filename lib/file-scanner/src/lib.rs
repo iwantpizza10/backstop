@@ -192,17 +192,24 @@ fn scan_artists(items: &[SongItem]) -> Vec<Artist> {
 
     for item in items {
         if let Some(track_artists) = &item.track_artists {
+            // known artists
+
             for track_artist in track_artists {
                 if let Some(artist) = artists.get_mut(&Some(track_artist.clone())) {
+                    // artist item exists, add track to them
+
                     artist.tracks.push(item.id);
 
                     if let Some(album_artists) = item.album_artists.clone()
                         && album_artists.contains(&track_artist.clone())
                         && !artist.album_names.contains(&item.album_name)
                     {
+                        // add album to artist if needed
                         artist.album_names.push(item.album_name.clone());
                     }
                 } else {
+                    // artist item doesn't exist, create it
+
                     let mut artist = Artist {
                         name: Some(track_artist.clone()),
                         album_names: vec![],
@@ -213,6 +220,7 @@ fn scan_artists(items: &[SongItem]) -> Vec<Artist> {
                         && album_artists.contains(&track_artist.clone())
                         && !artist.album_names.contains(&item.album_name)
                     {
+                        // and add album to artist if needed
                         artist.album_names.push(item.album_name.clone());
                     }
 
@@ -220,13 +228,20 @@ fn scan_artists(items: &[SongItem]) -> Vec<Artist> {
                 }
             }
         } else {
+            // unknown artist
+
             if let Some(artist) = artists.get_mut(&None) {
+                // unknown artist item exists, add track to it
+
                 artist.tracks.push(item.id);
 
                 if item.album_artists.is_none() && !artist.album_names.contains(&item.album_name) {
+                    // and album if needed
                     artist.album_names.push(item.album_name.clone());
                 }
             } else {
+                // unknown artist item doesn't exist, create it w/ the track
+
                 let mut artist = Artist {
                     name: None,
                     album_names: vec![],
@@ -234,6 +249,7 @@ fn scan_artists(items: &[SongItem]) -> Vec<Artist> {
                 };
 
                 if item.album_artists.is_none() && !artist.album_names.contains(&item.album_name) {
+                    // and add album if needed
                     artist.album_names.push(item.album_name.clone());
                 }
 
@@ -246,7 +262,51 @@ fn scan_artists(items: &[SongItem]) -> Vec<Artist> {
 }
 
 fn scan_albums(items: &[SongItem]) -> Vec<Album> {
-    todo!()
+    let mut albums: HashMap<Option<String>, Album> = HashMap::new();
+
+    for item in items {
+        if let Some(album_name) = &item.album_name {
+            // known album
+
+            if let Some(album) = albums.get_mut(&Some(album_name.clone())) {
+                // album item already exists so we add our track
+                // + do NOT copy over album artist info
+
+                album.tracks.push(item.id);
+            } else {
+                // album item does not exist, create it w/ track n stuff
+                // also copy over album artist info
+
+                let album = Album {
+                    name: Some(album_name.clone()),
+                    artist_names: item.album_artists.clone(),
+                    tracks: vec![item.id],
+                };
+
+                albums.insert(Some(album_name.clone()), album);
+            }
+        } else {
+            // unknown album
+
+            if let Some(album) = albums.get_mut(&None) {
+                // unknown album already exists, add track to it
+
+                album.tracks.push(item.id);
+            } else {
+                // unknown album does not exist, create it w/ the track
+
+                let album = Album {
+                    name: None,
+                    artist_names: None,
+                    tracks: vec![item.id],
+                };
+
+                albums.insert(None, album);
+            }
+        }
+    }
+
+    albums.into_values().collect()
 }
 
 #[cfg(test)]
@@ -330,5 +390,20 @@ mod tests {
         // not going to test more because i frankly don't feel like writing
         // code to handle when the artists flip spots randomly due to hashsets
         // being arbitrarily ordered when collected into Vec<_>s or whatever
+    }
+
+    #[test]
+    fn scan_albums_from_dir_metadata() {
+        let path = PathBuf::from_str("../../tests_res/file_scan_test").expect("path should parse");
+        let scan = scan_dir_metadata(&path, false);
+        let albums = scan_albums(&scan);
+        
+        assert_eq!(albums.len(), 1);
+
+        let album = albums[0].clone();
+
+        assert_eq!(album.name, Some("the beeps".to_string()));
+        assert_eq!(album.artist_names, Some(vec!["me".to_string()]));
+        assert_eq!(album.tracks.len(), 2);
     }
 }
