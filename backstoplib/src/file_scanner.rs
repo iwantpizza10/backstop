@@ -8,8 +8,8 @@ use lofty::{
 use std::{collections::HashMap, io, path::PathBuf};
 use uuid::Uuid;
 
-use crate::types::{Album, Artist, SongItem};
 use crate::constants;
+use crate::types::{Album, Artist, SongItem};
 
 fn discover_files(dir: &PathBuf) -> Result<Vec<PathBuf>, io::Error> {
     let scan = std::fs::read_dir(dir)?;
@@ -399,7 +399,7 @@ mod tests {
         let path = PathBuf::from_str("../tests_res/file_scan_test").expect("path should parse");
         let scan = scan_dir_metadata(&path, false);
         let albums = scan_albums(&scan);
-        
+
         assert_eq!(albums.len(), 1);
 
         let album = albums[0].clone();
