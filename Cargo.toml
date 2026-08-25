@@ -7,8 +7,7 @@ version = "3.0.0"
 edition = "2024"
 
 [dependencies]
-file-scanner = { path = "./lib/file-scanner" }
-types = { path = "./lib/types" }
+backstoplib = { path = "./backstoplib" }
 
 [build-dependencies]
 
