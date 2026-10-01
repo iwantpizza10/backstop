@@ -4,7 +4,9 @@ use std::collections::HashSet;
 use chrono::{DateTime, Utc};
 use discord_rich_presence::DiscordIpcClient;
 
-use types::RpcMode;
+pub use types::*;
+
+use crate::player;
 
 pub struct DiscordRpc {
     mode: RpcMode,
@@ -12,7 +14,7 @@ pub struct DiscordRpc {
     current_title: Option<String>,
     current_artist: Option<Vec<String>>,
     start_time: Option<DateTime<Utc>>,
-    player_state: todo!(), // grahhhhhh
+    player_state: player::PlayerState, // grahhhhhh
     playback_speed: f32,
     is_clear: bool,
     rpc_client: Option<DiscordIpcClient>,
