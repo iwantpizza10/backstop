@@ -321,18 +321,23 @@ mod tests {
     fn files_discover() {
         let path = PathBuf::from_str("../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(&path).expect("should not error while discovering");
+        let files_names = files.iter().map(|x| x.file_name()).collect::<Vec<_>>();
 
         assert_eq!(files.len(), 3);
-        assert_eq!(files[0].file_name(), Some(OsStr::new("beep_1.mp3")));
-        assert_eq!(files[1].file_name(), Some(OsStr::new("hello.txt")));
-        assert_eq!(files[2].file_name(), Some(OsStr::new("beep_2.flac")));
+        assert!(files_names.contains(&Some(OsStr::new("beep_1.mp3"))));
+        assert!(files_names.contains(&Some(OsStr::new("beep_2.flac"))));
+        assert!(files_names.contains(&Some(OsStr::new("hello.txt"))));
     }
 
     #[test]
     fn metadata_scans_mp3() {
         let path = PathBuf::from_str("../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(&path).expect("should not error while discovering");
-        let beep_1 = scan_file_metadata(&files[0], false).unwrap();
+        let beep_1_file = files
+            .into_iter()
+            .find_map(|x| if let Some(a) = x.file_name() && a == "beep_1.mp3" { Some(x) } else { None })
+            .expect("beep_1.mp3 should exist");
+        let beep_1 = scan_file_metadata(&beep_1_file, false).unwrap();
 
         assert_eq!(beep_1.title, Some("beep_1".to_string()));
         assert_eq!(
@@ -351,14 +356,23 @@ mod tests {
     fn metadata_does_not_scan_txt() {
         let path = PathBuf::from_str("../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(&path).expect("should not error while discovering");
-        let beep_2 = scan_file_metadata(&files[1], false).unwrap();
+        let hello_txt_file = files
+            .into_iter()
+            .find_map(|x| if let Some(a) = x.file_name() && a == "hello.txt" { Some(x) } else { None })
+            .expect("hello.txt should exist");
+        
+        scan_file_metadata(&hello_txt_file, false).unwrap();
     }
 
     #[test]
     fn metadata_scans_flac() {
         let path = PathBuf::from_str("../tests_res/file_scan_test").expect("path should parse");
         let files = discover_files(&path).expect("should not error while discovering");
-        let beep_2 = scan_file_metadata(&files[2], false).unwrap();
+        let beep_2_file = files
+            .into_iter()
+            .find_map(|x| if let Some(a) = x.file_name() && a == "beep_2.flac" { Some(x) } else { None })
+            .expect("beep_2.flac should exist");
+        let beep_2 = scan_file_metadata(&beep_2_file, false).unwrap();
 
         assert_eq!(beep_2.title, Some("beep_2".to_string()));
         assert_eq!(beep_2.track_artists, Some(vec!["me".to_string()]));
