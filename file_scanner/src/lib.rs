@@ -6,6 +6,7 @@ use lofty::{
     tag::{Accessor, ItemKey},
 };
 use std::{collections::HashMap, io, path::PathBuf};
+use types::{Album, Artist, SongItem};
 use uuid::Uuid;
 
 fn discover_files(dir: &PathBuf) -> Result<Vec<PathBuf>, io::Error> {
@@ -332,7 +333,15 @@ mod tests {
         let files = discover_files(&path).expect("should not error while discovering");
         let beep_1_file = files
             .into_iter()
-            .find_map(|x| if let Some(a) = x.file_name() && a == "beep_1.mp3" { Some(x) } else { None })
+            .find_map(|x| {
+                if let Some(a) = x.file_name()
+                    && a == "beep_1.mp3"
+                {
+                    Some(x)
+                } else {
+                    None
+                }
+            })
             .expect("beep_1.mp3 should exist");
         let beep_1 = scan_file_metadata(&beep_1_file, false).unwrap();
 
@@ -355,9 +364,17 @@ mod tests {
         let files = discover_files(&path).expect("should not error while discovering");
         let hello_txt_file = files
             .into_iter()
-            .find_map(|x| if let Some(a) = x.file_name() && a == "hello.txt" { Some(x) } else { None })
+            .find_map(|x| {
+                if let Some(a) = x.file_name()
+                    && a == "hello.txt"
+                {
+                    Some(x)
+                } else {
+                    None
+                }
+            })
             .expect("hello.txt should exist");
-        
+
         scan_file_metadata(&hello_txt_file, false).unwrap();
     }
 
@@ -367,7 +384,15 @@ mod tests {
         let files = discover_files(&path).expect("should not error while discovering");
         let beep_2_file = files
             .into_iter()
-            .find_map(|x| if let Some(a) = x.file_name() && a == "beep_2.flac" { Some(x) } else { None })
+            .find_map(|x| {
+                if let Some(a) = x.file_name()
+                    && a == "beep_2.flac"
+                {
+                    Some(x)
+                } else {
+                    None
+                }
+            })
             .expect("beep_2.flac should exist");
         let beep_2 = scan_file_metadata(&beep_2_file, false).unwrap();
 

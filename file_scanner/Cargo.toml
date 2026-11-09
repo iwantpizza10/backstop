@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+constants = { path = "../constants" }
 image = "0.25.10"
 lofty = "0.25.5"
+types = { path = "../types" }
 uuid = { version = "1.29.2", features = ["v4"] }
 
 [lints]

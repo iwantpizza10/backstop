@@ -1,14 +1,6 @@
-# [package]
-# name = "backstop"
-# description = "a desktop music player built w/ rust"
-# repository = "https://github.com/iwantpizza10/backstop"
-# license = "MIT"
-# version = "3.0.0"
-# edition = "2024"
-
 [workspace]
 resolver = "3"
-members = [ "backstoplib" , "constants", "discord_rpc", "file_scanner", "types"]
+members = ["constants", "discord_rpc", "file_scanner", "types"]
 
 [workspace.lints.clippy]
 allow_attributes = "warn"

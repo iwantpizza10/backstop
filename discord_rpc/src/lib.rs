@@ -1,8 +1,8 @@
 mod types;
 
-use std::collections::HashSet;
 use chrono::{DateTime, Utc};
 use discord_rich_presence::DiscordIpcClient;
+use std::collections::HashSet;
 
 pub use types::*;
 
