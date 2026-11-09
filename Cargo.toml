@@ -1,17 +1,16 @@
-[package]
-name = "backstop"
-description = "a desktop music player built w/ rust"
-repository = "https://github.com/iwantpizza10/backstop"
-license = "MIT"
-version = "3.0.0"
-edition = "2024"
+# [package]
+# name = "backstop"
+# description = "a desktop music player built w/ rust"
+# repository = "https://github.com/iwantpizza10/backstop"
+# license = "MIT"
+# version = "3.0.0"
+# edition = "2024"
 
-[dependencies]
-backstoplib = { path = "./backstoplib" }
+[workspace]
+resolver = "3"
+members = [ "backstoplib" , "constants", "discord_rpc", "file_scanner", "types"]
 
-[build-dependencies]
-
-[lints.clippy]
+[workspace.lints.clippy]
 allow_attributes = "warn"
 branches_sharing_code = "warn"
 case_sensitive_file_extension_comparisons = "warn"
@@ -29,3 +28,4 @@ search_is_some = "warn"
 todo = "warn"
 unnecessary_semicolon = "warn"
 unnecessary_wraps = "warn"
+unwrap_used = "warn"

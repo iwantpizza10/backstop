@@ -1,0 +1,11 @@
+[package]
+name = "types"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+lofty = "0.25.5"
+uuid = { version = "1.29.2", features = ["v4"] }
+
+[lints]
+workspace = true

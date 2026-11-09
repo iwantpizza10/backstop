@@ -8,9 +8,6 @@ use lofty::{
 use std::{collections::HashMap, io, path::PathBuf};
 use uuid::Uuid;
 
-use crate::constants;
-use crate::types::{Album, Artist, SongItem};
-
 fn discover_files(dir: &PathBuf) -> Result<Vec<PathBuf>, io::Error> {
     let scan = std::fs::read_dir(dir)?;
     let mut results: Vec<PathBuf> = vec![];
