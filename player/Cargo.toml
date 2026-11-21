@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-symphonia = "0.6.1"
+symphonia = { version = "0.6.1", features = ["aac", "aiff", "mp3"] }
 
 [lints]
 workspace = true

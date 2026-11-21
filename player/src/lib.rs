@@ -1,5 +1,21 @@
-use std::{fs::File, path::PathBuf};
-use symphonia::core::{audio::{Audio, AudioBuffer, GenericAudioBuffer, GenericAudioBufferRef}, codecs::audio::AudioDecoderOptions, errors::Error, formats::{FormatOptions, TrackType, probe::Hint}, io::MediaSourceStream, meta::MetadataOptions};
+use std::{error, fmt::Display, fs::File, io, path::PathBuf};
+use symphonia::core::{audio::{GenericAudioBuffer, GenericAudioBufferRef}, codecs::audio::AudioDecoderOptions, errors::Error, formats::{FormatOptions, TrackType, probe::Hint}, io::MediaSourceStream, meta::MetadataOptions};
+
+#[derive(Debug)]
+pub enum DecodeError {
+    NoTrackFound,
+    ParamsDontExist,
+    SymphoniaError(Error),
+    IoError(io::Error),
+}
+
+impl Display for DecodeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl error::Error for DecodeError {}
 
 pub struct Player {
     cur_song: GenericAudioBuffer,
@@ -7,30 +23,65 @@ pub struct Player {
 }
 
 impl Player {
-    fn decode_file(file: PathBuf) -> GenericAudioBuffer {
-        let src = File::open(&file).unwrap();
+    fn decode_file(file: PathBuf) -> Result<Vec<GenericAudioBuffer>, DecodeError> {
+        let src = match File::open(&file) {
+            Ok(s) => s,
+            Err(err) => {
+                println!("decode error: {err:?}");
+                return Err(DecodeError::IoError(err));
+            },
+        };
+
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
 
         let mut hint = Hint::new();
-        hint.with_extension(file.extension().unwrap().to_str().unwrap());
+        if let Some(ext) = file.extension() && let Some(ext) = ext.to_str() {
+            hint.with_extension(ext);
+        } else {
+            println!("decode could not find file extension");
+        }
 
         let meta_opts: MetadataOptions = Default::default();
         let fmt_opts: FormatOptions = Default::default();
 
-        let mut format = symphonia::default::get_probe()
+        let mut format = match symphonia::default::get_probe()
             .probe(&hint, mss, fmt_opts, meta_opts)
-            .unwrap();
-
-        let track = format.default_track(TrackType::Audio).unwrap();
+        {
+            Ok(reader) => reader,
+            Err(err) => {
+                println!("decode error: {err}");
+                return Err(DecodeError::SymphoniaError(err));
+            },
+        };
+        
         let decode_opts: AudioDecoderOptions = Default::default();
+        let track = if let Some(tk) = format.default_track(TrackType::Audio) {
+            tk
+        } else if let Some(tk) = format.first_track(TrackType::Audio) {
+            tk
+        } else {
+            return Err(DecodeError::NoTrackFound);
+        };
 
-        let mut decoder = symphonia::default::get_codecs()
-            .make_audio_decoder(
-                track.codec_params.as_ref().unwrap().audio().unwrap(),
-                &decode_opts
-            ).unwrap();
+        let params = if let Some(p) = track.codec_params.as_ref() && let Some(p) = p.audio() {
+            p
+        } else {
+            println!("decode error: {}", DecodeError::ParamsDontExist); // lmao
+            return Err(DecodeError::ParamsDontExist);
+        };
+
+        let mut decoder = match symphonia::default::get_codecs()
+            .make_audio_decoder(params, &decode_opts)
+        {
+            Ok(d) => d,
+            Err(err) => {
+                println!("decode error: {err}");
+                return Err(DecodeError::SymphoniaError(err));
+            },
+        };
 
         let track_id = track.id;
+        let mut audio_buffers = vec![];
 
         loop {
             let packet = match format.next_packet() {
@@ -50,7 +101,7 @@ impl Player {
 
             match decoder.decode(&packet) {
                 Ok(decoded) => {
-                    match decoded {
+                    audio_buffers.push(match decoded {
                         GenericAudioBufferRef::S8 (buf) => GenericAudioBuffer::S8(buf.clone()),
                         GenericAudioBufferRef::S16(buf) => GenericAudioBuffer::S16(buf.clone()),
                         GenericAudioBufferRef::S24(buf) => GenericAudioBuffer::S24(buf.clone()),
@@ -61,14 +112,15 @@ impl Player {
                         GenericAudioBufferRef::U32(buf) => GenericAudioBuffer::U32(buf.clone()),
                         GenericAudioBufferRef::F32(buf) => GenericAudioBuffer::F32(buf.clone()),
                         GenericAudioBufferRef::F64(buf) => GenericAudioBuffer::F64(buf.clone()),
-                    };
+                    });
                 },
+
                 Err(Error::IoError(_)) | Err(Error::DecodeError(_)) => continue,
                 Err(err) => panic!("{err}"),
             }
         }
 
-        todo!()
+        Ok(audio_buffers)
     }
 }
 
@@ -77,10 +129,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a() {
-        Player::decode_file(PathBuf::from("/home/iwantpizza/Desktop/backstop/tests_res/file_scan_test/subfolder/beep_2.flac"));
-        // Player::decode_file(PathBuf::from("/home/iwantpizza/Music/glorious flac collection/Eliminate - Get Off The Internet (2024)/03. Eliminate - EGOTRIP.flac"));
+    fn decodes_beep_flac() {
+        let bufs = Player::decode_file(PathBuf::from("../tests_res/file_scan_test/subfolder/beep_2.flac"));
+        let sample_counts = bufs.unwrap().iter().map(|x| x.samples_planar()).collect::<Vec<_>>();
 
-        panic!();
+        assert_eq!(sample_counts, [4096usize, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 2069]);
+    }
+
+    #[test]
+    fn decodes_beep_mp3() {
+        let bufs = Player::decode_file(PathBuf::from("../tests_res/file_scan_test/beep_1.mp3"));
+        let sample_counts = bufs.unwrap().iter().map(|x| x.samples_planar()).collect::<Vec<_>>();
+
+        assert_eq!(sample_counts, [1152usize; 67]);
     }
 }
